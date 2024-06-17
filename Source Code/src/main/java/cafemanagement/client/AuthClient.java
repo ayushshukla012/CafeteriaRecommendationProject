@@ -2,10 +2,16 @@ package cafemanagement.client;
 
 import java.io.*;
 import java.net.*;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class AuthClient {
     private static final String SERVER_IP = "localhost";
     private static final int SERVER_PORT = 8080;
+    private static String userName;
+    private static String roleName;
+    private static BufferedReader serverReader;
+    private static Queue<String> notificationsQueue = new ConcurrentLinkedQueue<>();
 
     public static void main(String[] args) {
         try (
@@ -15,24 +21,31 @@ public class AuthClient {
             BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in))
         ) {
             System.out.println("Connected to server on " + SERVER_IP + ":" + SERVER_PORT);
+            serverReader = reader;
 
             while (true) {
-                displayMenu();
-                System.out.print("Choose an option: ");
-                String input = userInput.readLine().trim();
+                displayRoleSelectionMenu();
+                System.out.print("\nChoose your role: ");
+                roleName = userInput.readLine().trim();
 
-                switch (input) {
-                    case "1":
-                        login(writer, reader, userInput);
-                        break;
-                    case "2":
-                        logout(writer, reader);
-                        break;
-                    case "3":
-                        System.out.println("Exiting...");
-                        return;
-                    default:
-                        System.out.println("Invalid input. Please enter a number.");
+                if (!roleName.equals("1") && !roleName.equals("2") && !roleName.equals("3")) {
+                    System.out.println("Invalid input. Please enter a valid number.");
+                    continue;
+                }
+
+                if (login(writer, userInput)) {
+                    receiveNotifications();
+                    switch (roleName) {
+                        case "1":
+                            new Employee(userName, notificationsQueue, writer, userInput).start();
+                            break;
+                        case "2":
+                            new Chef(userName, writer, userInput).start();
+                            break;
+                        case "3":
+                            new Admin(userName, writer, userInput).start();
+                            break;
+                    }
                 }
             }
         } catch (IOException e) {
@@ -40,30 +53,74 @@ public class AuthClient {
         }
     }
 
-    private static void displayMenu() {
-        System.out.println("1. Login");
-        System.out.println("2. Logout");
-        System.out.println("3. Exit");
+    private static void displayRoleSelectionMenu() {
+        System.out.println("Select your role:");
+        System.out.println("1. Employee");
+        System.out.println("2. Chef");
+        System.out.println("3. Admin");
     }
 
-    private static void login(PrintWriter writer, BufferedReader reader, BufferedReader userInput) throws IOException {
-        System.out.print("Enter User ID: ");
+    private static boolean login(PrintWriter writer, BufferedReader userInput) throws IOException {
+        System.out.print("\nEnter User ID: ");
         int userId = Integer.parseInt(userInput.readLine().trim());
 
         System.out.print("Enter Password: ");
         String password = userInput.readLine().trim();
 
-        System.out.print("Enter Role: ");
-        String roleName = userInput.readLine().trim();
+        String roleNameString = "";
+        switch (roleName) {
+            case "1":
+                roleNameString = "Employee";
+                break;
+            case "2":
+                roleNameString = "Chef";
+                break;
+            case "3":
+                roleNameString = "Admin";
+                break;
+        }
 
-        writer.println("LOGIN:" + userId + ":" + password + ":" + roleName);
-        String response = reader.readLine();
-        System.out.println("Server response: " + response);
+        writer.println("LOGIN:" + userId + ":" + password + ":" + roleNameString);
+        String response = serverReader.readLine();
+
+        if (response.startsWith("SUCCESS")) {
+            System.out.println(response);
+            String[] parts = response.split(" ");
+            if (parts.length >= 5) {
+                String[] nameParts = parts[4].split("!");
+                if (nameParts.length >= 2) {
+                    userName = nameParts[0] + " " + nameParts[1];
+                } else {
+                    userName = parts[4].replace("!", "");
+                }
+            } else {
+                System.out.println("Error: Unexpected response format.");
+                return false;
+            }
+            System.out.println("Welcome " + userName + "!");
+            return true;
+        } else {
+            System.out.println(response);
+            return false;
+        }
     }
 
-    private static void logout(PrintWriter writer, BufferedReader reader) throws IOException {
-        writer.println("LOGOUT");
-        String response = reader.readLine();
-        System.out.println("Server response: " + response);
+    private static void receiveNotifications() {
+        Thread notificationThread = new Thread(() -> {
+            try {
+                while (true) {
+                    String notification = serverReader.readLine();
+                    if (notification.startsWith("NOTIFICATION:")) {
+                        notificationsQueue.offer(notification.substring(14));
+                        System.out.println("New notification: " + notification.substring(14));
+                    } else {
+                        System.out.println(notification);
+                    }
+                }
+            } catch (IOException e) {
+                System.err.println("Error receiving notifications: " + e.getMessage());
+            }
+        });
+        notificationThread.start();
     }
 }
