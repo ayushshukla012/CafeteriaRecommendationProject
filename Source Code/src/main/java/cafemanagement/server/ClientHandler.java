@@ -5,7 +5,7 @@ import cafemanagement.client.Admin;
 import cafemanagement.client.Chef;
 import cafemanagement.client.Employee;
 import cafemanagement.model.User;
-import cafemanagement.service.NotificationService;
+import cafemanagement.service.UserService;
 
 import java.io.*;
 import java.net.Socket;
@@ -17,18 +17,16 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ClientHandler implements Runnable {
     private final Socket clientSocket;
-    private final AuthService authService;
+    private final UserService userService;
     private final ConcurrentHashMap<String, ClientHandler> clients;
     private PrintWriter writer;
-    private String loggedInUser;
+    private User loggedInUser;
     private String loggedInRole;
-    private final NotificationService notificationService;
     private final Queue<String> notificationsQueue = new ConcurrentLinkedQueue<>();
 
     public ClientHandler(Socket clientSocket, ConcurrentHashMap<String, ClientHandler> clients) {
         this.clientSocket = clientSocket;
-        this.authService = new AuthService();
-        this.notificationService = new NotificationService();
+        this.userService = new UserService();
         this.clients = clients;
     }
 
@@ -59,8 +57,8 @@ public class ClientHandler implements Runnable {
             }
 
             if (loggedInUser != null) {
-                clients.remove(loggedInUser);
-                sendNotificationToAll("User " + loggedInUser + " has logged out.");
+                clients.remove(loggedInUser.getName());
+                sendNotificationToAll("User " + loggedInUser.getName() + " has logged out.");
             }
         }
     }
@@ -87,6 +85,7 @@ public class ClientHandler implements Runnable {
             writer.println("You have been logged out.");
         } else {
         String command = inputLine.split(":")[0];
+        writer.println("command: " + command);
         switch (loggedInRole) {
             case "Employee":
                 Employee employee = new Employee(loggedInUser, notificationsQueue, writer, new BufferedReader(new InputStreamReader(clientSocket.getInputStream())));
@@ -109,49 +108,16 @@ public class ClientHandler implements Runnable {
     
 
     private void handleLogin(int userId, String password, String roleName) {
-        User user = authService.login(userId, password, roleName);
+        User user = userService.authenticate(userId, password, roleName);
         if (user != null) {
-            loggedInUser = user.getName();
+            loggedInUser = user;
             loggedInRole = roleName;
-            clients.put(loggedInUser, this);
-            sendNotificationToAll("User " + loggedInUser + " has logged in.");
-            sendStoredNotifications(loggedInUser);
+            clients.put(loggedInUser.getName(), this);
+            sendNotificationToAll("User " + loggedInUser.getName() + " has logged in.");
             String currentDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
             writer.println("SUCCESS: Login successful.  Welcome " + user.getName() + "! " + currentDate);
-            //displayMenuByRole(loggedInRole);
         } else {
             writer.println("ERROR: Invalid credentials or role. Please try again.");
-        }
-    }
-
-    private void displayMenuByRole(String role) {
-        writer.println("Enter your choice:");
-        switch (role) {
-            case "Employee":
-                writer.println("1. See notifications");
-                writer.println("2. Provide Feedback");
-                writer.println("3. Select Meal for tomorrow");
-                writer.println("4. Vote for Meal");
-                writer.println("5. See Menu");
-                writer.println("6. Logout");
-                break;
-            case "Chef":
-                writer.println("1. Send notifications");
-                writer.println("2. View user feedback");
-                writer.println("3. Generate Feedback Report");
-                writer.println("4. Send dishes to review");
-                writer.println("5. Logout");
-                break;
-            case "Admin":
-                writer.println("1. Add menu item");
-                writer.println("2. Update menu item");
-                writer.println("3. Delete menu item");
-                writer.println("4. Check item availability");
-                writer.println("5. Logout");
-                break;
-            default:
-                writer.println("ERROR: Invalid role.");
-                break;
         }
     }
 
@@ -160,13 +126,6 @@ public class ClientHandler implements Runnable {
             if (clientHandler != this) {
                 clientHandler.writer.println("NOTIFICATION: " + message);
             }
-        }
-    }
-
-    private void sendStoredNotifications(String username) {
-        String notification;
-        while ((notification = notificationsQueue.poll()) != null) {
-            writer.println("NOTIFICATION: " + notification);
         }
     }
 }

@@ -1,79 +1,109 @@
 package cafemanagement.service;
 
-import cafemanagement.model.User;
 import cafemanagement.utils.DatabaseUtil;
+import cafemanagement.model.Notification;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.sql.Timestamp;
+
 
 public class NotificationService {
 
-    public void sendRecommendationNotification(int menuItemId) {
-        String message = "Recommendation: Check out the new menu item for tomorrow!";
-        String notificationType = "Recommendation";
-        List<User> employees = getUsersWithRole("Employee");
+    public void sendNotification(int senderId, String notificationType, int menuItemId, String message, List<Integer> receiverIds) {
+        System.out.println("Notification Details:");
+        System.out.println("Sender ID: " + senderId);
+        System.out.println("Notification Type: " + notificationType);
+        System.out.println("Menu Item ID: " + menuItemId);
+        System.out.println("Message: " + message);
+        System.out.println("Receiver IDs: " + receiverIds);
+        String insertNotificationSQL = "INSERT INTO Notifications (senderId, notificationType, menuItemId, message) VALUES (?, ?, ?, ?)";
+        String insertUserNotificationSQL = "INSERT INTO UserNotifications (receiverId, notificationId) VALUES (?, ?)";
 
-        saveNotificationToDB(employees, notificationType, menuItemId, message);
+        try (Connection conn = DatabaseUtil.getConnection();
+             PreparedStatement psNotification = conn.prepareStatement(insertNotificationSQL, PreparedStatement.RETURN_GENERATED_KEYS)) {
+
+            // Insert notification into Notifications table
+            psNotification.setInt(1, senderId);
+            psNotification.setString(2, notificationType);
+            psNotification.setInt(3, menuItemId);
+            psNotification.setString(4, message);
+            psNotification.executeUpdate();
+
+            // Retrieve generated notification ID
+            ResultSet rs = psNotification.getGeneratedKeys();
+            int notificationId = -1;
+            if (rs.next()) {
+                notificationId = rs.getInt(1);
+            }
+
+            // Insert user notifications into UserNotifications table
+            try (PreparedStatement psUserNotification = conn.prepareStatement(insertUserNotificationSQL)) {
+                for (int receiverId : receiverIds) {
+                    psUserNotification.setInt(1, receiverId);
+                    psUserNotification.setInt(2, notificationId);
+                    psUserNotification.addBatch();
+                }
+                psUserNotification.executeBatch();
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
-    public void sendNewFoodItemNotification(int menuItemId) {
-        String message = "New Food Item added: Check out the new item on the menu!";
-        String notificationType = "NewFoodItem";
-        List<User> employees = getUsersWithRole("Employee");
+    public List<Notification> getUnreadNotifications(int employeeId) {
+        List<Notification> notifications = new ArrayList<>();
 
-        saveNotificationToDB(employees, notificationType, menuItemId, message);
-    }
-
-    public void sendAvailabilityChangeNotification(int menuItemId, boolean availability) {
-        String message = "Availability Change: The availability of an item has changed to " + (availability ? "available" : "unavailable") + ".";
-        String notificationType = "AvailabilityChange";
-        List<User> employees = getUsersWithRole("Employee");
-
-        saveNotificationToDB(employees, notificationType, menuItemId, message);
-    }
-
-    private List<User> getUsersWithRole(String roleName) {
-        List<User> users = new ArrayList<>();
-        String query = "SELECT u.employeeId, u.name, u.password, r.roleName " +
-                "FROM Users u " +
-                "JOIN UserRoles ur ON u.employeeId = ur.userId " +
-                "JOIN Roles r ON ur.roleId = r.roleId " +
-                "WHERE r.roleName = ?";
+        String query = "SELECT n.notificationId, n.senderId, n.notificationType, n.menuItemId, n.message, n.notificationDate " +
+                       "FROM Notifications n " +
+                       "JOIN UserNotifications un ON n.notificationId = un.notificationId " +
+                       "WHERE un.receiverId = ? AND un.isRead = FALSE " +
+                       "ORDER BY n.notificationDate ASC";
 
         try (Connection conn = DatabaseUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 
-            pstmt.setString(1, roleName);
+            pstmt.setInt(1, employeeId);
+
             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
-                users.add(new User(rs.getInt("employeeId"), rs.getString("name"), rs.getString("password"), rs.getString("roleName")));
+                int notificationId = rs.getInt("notificationId");
+                int senderId = rs.getInt("senderId");
+                String notificationType = rs.getString("notificationType");
+                int menuItemId = rs.getInt("menuItemId");
+                String message = rs.getString("message");
+                java.sql.Timestamp notificationDate = rs.getTimestamp("notificationDate");
+
+                Notification notification = new Notification(notificationId, senderId, notificationType, menuItemId, message, notificationDate);
+                notifications.add(notification);
             }
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return users;
+
+        return notifications;
     }
 
-    private void saveNotificationToDB(List<User> users, String notificationType, int menuItemId, String message) {
-        String insertNotificationQuery = "INSERT INTO Notifications (receiverId, notificationType, menuItemId, message) VALUES (?, ?, ?, ?)";
+    public void markNotificationAsRead(int notificationId, int receiverId) {
+        String updateQuery = "UPDATE UserNotifications SET isRead = TRUE WHERE notificationId = ? AND receiverId = ?";
 
-        try (Connection conn = DatabaseUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(insertNotificationQuery)) {
+        try (Connection connection = DatabaseUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(updateQuery)) {
+             
+            statement.setInt(1, notificationId);
+            statement.setInt(2, receiverId);
+            statement.executeUpdate();
 
-            for (User user : users) {
-                pstmt.setInt(1, user.getEmployeeId());
-                pstmt.setString(2, notificationType);
-                pstmt.setInt(3, menuItemId);
-                pstmt.setString(4, message);
-                pstmt.executeUpdate();
-            }
         } catch (SQLException e) {
-            e.printStackTrace();
+            e.printStackTrace(); // Handle properly in your application, e.g., logging
         }
     }
 }

@@ -1,16 +1,18 @@
 package cafemanagement.client;
 
+import cafemanagement.model.User;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 
 public class Admin {
-    private String userName;
+    private User currentUser;
     private PrintWriter writer;
     private BufferedReader userInput;
 
-    public Admin(String userName, PrintWriter writer, BufferedReader userInput) {
-        this.userName = userName;
+    public Admin(User currentUser, PrintWriter writer, BufferedReader userInput) {
+        this.currentUser = currentUser;
         this.writer = writer;
         this.userInput = userInput;
     }

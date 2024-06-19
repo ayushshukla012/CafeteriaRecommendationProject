@@ -1,21 +1,28 @@
 package cafemanagement.client;
 
+import cafemanagement.model.User;
+import cafemanagement.service.NotificationService;
+import cafemanagement.model.Notification;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.List;
 import java.util.Queue;
 
 public class Employee {
-    private String userName;
+    private User currentUser;
     private Queue<String> notificationsQueue;
     private PrintWriter writer;
     private BufferedReader userInput;
+    private NotificationService notificationService;
 
-    public Employee(String userName, Queue<String> notificationsQueue, PrintWriter writer, BufferedReader userInput) {
-        this.userName = userName;
+    public Employee(User currentUser, Queue<String> notificationsQueue, PrintWriter writer, BufferedReader userInput) {
+        this.currentUser = currentUser;
         this.notificationsQueue = notificationsQueue;
         this.writer = writer;
         this.userInput = userInput;
+        this.notificationService = new NotificationService();
     }
 
     public void start() {
@@ -67,12 +74,17 @@ public class Employee {
     }
 
     private void showNotifications() {
-        if (notificationsQueue.isEmpty()) {
-            System.out.println("No notifications.");
+        int employeeId = getUserIdByCurrentUser(currentUser);
+
+        List<Notification> notifications = notificationService.getUnreadNotifications(employeeId);
+
+        if (notifications.isEmpty()) {
+           System.out.println("No notifications.");
         } else {
             System.out.println("Notifications:");
-            while (!notificationsQueue.isEmpty()) {
-                System.out.println(notificationsQueue.poll());
+            for (Notification notification : notifications) {
+                System.out.println(notification.getNotificationDate() + ": " + notification.getMessage());
+                notificationService.markNotificationAsRead(notification.getNotificationId(), employeeId);
             }
         }
     }
@@ -108,5 +120,10 @@ public class Employee {
         } catch (Exception e) {
             System.err.println("Error logging out: " + e.getMessage());
         }
+    }
+
+    private int getUserIdByCurrentUser(User currentUserInstance) {
+        int userId = currentUserInstance.getUserId();
+        return userId != 0 ? userId : -1; // Return -1 if user not found
     }
 }

@@ -1,5 +1,7 @@
 package cafemanagement.client;
 
+import cafemanagement.model.User;
+
 import java.io.*;
 import java.net.*;
 import java.util.Queue;
@@ -8,6 +10,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class AuthClient {
     private static final String SERVER_IP = "localhost";
     private static final int SERVER_PORT = 8080;
+    private static User loggedInUser;
     private static String userName;
     private static String roleName;
     private static BufferedReader serverReader;
@@ -34,16 +37,16 @@ public class AuthClient {
                 }
 
                 if (login(writer, userInput)) {
-                    receiveNotifications();
+                 //   receiveNotifications();
                     switch (roleName) {
                         case "1":
-                            new Employee(userName, notificationsQueue, writer, userInput).start();
+                            new Employee(loggedInUser, notificationsQueue, writer, userInput).start();
                             break;
                         case "2":
-                            new Chef(userName, writer, userInput).start();
+                            new Chef(loggedInUser, writer, userInput).start();
                             break;
                         case "3":
-                            new Admin(userName, writer, userInput).start();
+                            new Admin(loggedInUser, writer, userInput).start();
                             break;
                     }
                 }
@@ -90,8 +93,10 @@ public class AuthClient {
                 String[] nameParts = parts[4].split("!");
                 if (nameParts.length >= 2) {
                     userName = nameParts[0] + " " + nameParts[1];
+                    loggedInUser = new User(userId, userName, roleNameString);
                 } else {
                     userName = parts[4].replace("!", "");
+                    loggedInUser = new User(userId, userName, roleNameString);
                 }
             } else {
                 System.out.println("Error: Unexpected response format.");
@@ -105,6 +110,7 @@ public class AuthClient {
         }
     }
 
+    /*
     private static void receiveNotifications() {
         Thread notificationThread = new Thread(() -> {
             try {
@@ -123,4 +129,5 @@ public class AuthClient {
         });
         notificationThread.start();
     }
+        */
 }

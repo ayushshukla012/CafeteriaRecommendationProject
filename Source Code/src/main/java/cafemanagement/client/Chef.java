@@ -1,18 +1,30 @@
 package cafemanagement.client;
 
+import cafemanagement.model.User;
+import cafemanagement.service.NotificationService;
+import cafemanagement.service.UserService;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class Chef {
-    private String userName;
+    private User currentUser;
     private PrintWriter writer;
     private BufferedReader userInput;
+    private NotificationService notificationService;
+    private UserService userService;
+    
 
-    public Chef(String userName, PrintWriter writer, BufferedReader userInput) {
-        this.userName = userName;
+    public Chef(User currentUser, PrintWriter writer, BufferedReader userInput) {
+        this.currentUser = currentUser;
         this.writer = writer;
         this.userInput = userInput;
+        this.notificationService = new NotificationService();
+        this.userService = new UserService();
     }
 
     public void start() {
@@ -63,14 +75,27 @@ public class Chef {
         }
     }
 
-    private void sendNotification() throws IOException {
+     private void sendNotification() throws IOException {
         try {
-            System.out.println("Enter your notification:");
-            String notification = userInput.readLine().trim();
-            // Send notification to server or process it here
+            String notificationType = "Recommendation";
+
+            System.out.println("Enter the item ID from Menu:");
+            int menuItemId = readIntegerInput();
+
+            System.out.println("Enter your message for Notification:");
+            String message = readNotificationMessage();
+
+            List<Integer> receiverIds = getAllEmployeeId(); // Send to all employees
+            
+            int senderId = getUserIdByCurrentUser(currentUser); //Current User id
+ 
+            notificationService.sendNotification(senderId, notificationType, menuItemId, message, receiverIds);
+
+            writer.println("ChefId: " + senderId + "Notification for " + notificationType + " sent.");
             System.out.println("Notification sent.");
         } catch (IOException e) {
-            System.err.println("Error reading notification: " + e.getMessage());
+            writer.println("ChefId: " + getUserIdByCurrentUser(currentUser) + "Error reading notification.");
+            System.err.println("Error sending notification: " + e.getMessage());
         }
     }
 
@@ -94,5 +119,45 @@ public class Chef {
         } catch (Exception e) {
             System.err.println("Error logging out: " + e.getMessage());
         }
+    }
+
+    private int getUserIdByCurrentUser(User currentUserInstance) {
+        int userId = currentUserInstance.getUserId();
+        return userId != 0 ? userId : -1; // Return -1 if user not found
+    }
+
+    private List<Integer> getAllEmployeeId() {
+        try {
+            List<Integer> allEmployeeIds = userService.getAllEmployeeIds();
+            return allEmployeeIds;
+        } catch (Exception e) {
+            System.err.println("Unable to fetch employee ids.");
+        }
+        return null;
+    }
+
+    private int readIntegerInput() throws IOException {
+        while (true) {
+            try {
+                String input = userInput.readLine().trim();
+                int number = Integer.parseInt(input);
+                return number;
+            } catch (NumberFormatException e) {
+                System.err.println("Invalid input. Please enter value in number format.");
+            }
+        }
+    }
+
+    private String readNotificationMessage() throws IOException {
+        StringBuilder messageBuilder = new StringBuilder();
+        String line;
+        // Read message until a blank line is encountered or null is returned (end of stream)
+        while ((line = userInput.readLine()) != null) {
+            if (line.isEmpty()) {
+                break;
+            }
+            messageBuilder.append(line).append("\n");
+        }
+        return messageBuilder.toString().trim();
     }
 }
