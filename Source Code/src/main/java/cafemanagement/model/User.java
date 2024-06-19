@@ -1,20 +1,27 @@
 package cafemanagement.model;
 
 public class User {
-    private int employeeId;
+    private int userId;
     private String name;
     private String password;
     private String role;
 
-    public User(int employeeId, String name, String password, String role) {
-        this.employeeId = employeeId;
+    public User(int userId, String name, String password, String role) {
+        this.userId = userId;
         this.name = name;
         this.password = password;
         this.role = role;
     }
 
-    public int getEmployeeId() {
-        return employeeId;
+    public User(int userId, String name,  String role) {
+        this.userId = userId;
+        this.name = name;
+        this.password = "";
+        this.role = role;
+    }
+
+    public int getUserId() {
+        return userId;
     }
 
     public String getName() {
