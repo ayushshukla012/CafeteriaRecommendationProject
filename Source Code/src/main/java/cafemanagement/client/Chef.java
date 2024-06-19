@@ -3,10 +3,12 @@ package cafemanagement.client;
 import cafemanagement.model.User;
 import cafemanagement.service.NotificationService;
 import cafemanagement.service.UserService;
+import cafemanagement.service.PollService;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -17,6 +19,7 @@ public class Chef {
     private BufferedReader userInput;
     private NotificationService notificationService;
     private UserService userService;
+    private PollService pollService;
     
 
     public Chef(User currentUser, PrintWriter writer, BufferedReader userInput) {
@@ -25,6 +28,7 @@ public class Chef {
         this.userInput = userInput;
         this.notificationService = new NotificationService();
         this.userService = new UserService();
+        this.pollService = new PollService();
     }
 
     public void start() {
@@ -108,8 +112,80 @@ public class Chef {
     }
 
     private void sendDishesToReview() {
-        System.out.println("Sending dishes to review...");
+        try {
+            System.out.println("Enter the category ID for the poll (1 for Breakfast, 2 for Lunch, 3 for Dinner):");
+            int categoryId = readIntegerInput();
+            System.out.println("categoryId: " + categoryId);
+    
+            List<String> menuItems = pollService.getMenuItemsByCategory(categoryId);
+            if (menuItems.isEmpty()) {
+                System.out.println("No items found for the selected category.");
+                return;
+            }
+    
+            System.out.println("Menu items:");
+            for (int i = 0; i < menuItems.size(); i++) {
+                System.out.println((i + 1) + ". " + menuItems.get(i));
+            }
+    
+            List<Integer> selectedItems = new ArrayList<>();
+            while (true) {
+                selectedItems.clear();
+                System.out.println("Select 5 items by entering their numbers (comma-separated):");
+                String[] selectedIndices = userInput.readLine().trim().split(",");
+    
+                if (selectedIndices.length >= 3 && selectedIndices.length <= 5) {
+                    boolean hasDuplicate = false;
+                    try {
+                        for (String index : selectedIndices) {
+                            int itemIndex = Integer.parseInt(index.trim()) - 1;
+                            if (itemIndex >= 0 && itemIndex < menuItems.size()) {
+                                if (selectedItems.contains(itemIndex + 1)) {
+                                    hasDuplicate = true;
+                                    break;
+                                } else {
+                                    selectedItems.add(itemIndex + 1);
+                                }
+                            } else {
+                                throw new NumberFormatException("Index out of range");
+                            }
+                        }
+                    } catch (NumberFormatException e) {
+                        System.err.println("Invalid input. Please enter valid numbers.");
+                        continue;
+                    }
+    
+                    if (hasDuplicate) {
+                        System.out.println("Duplicate items selected. Please select unique items.");
+                        continue;
+                    }
+    
+                    System.out.println("Selected items:");
+                    for (int index : selectedItems) {
+                        System.out.println(menuItems.get(index - 1));
+                    }
+    
+                    System.out.println("Do you confirm these items? (yes/no):");
+                    String confirmation = userInput.readLine().trim().toLowerCase();
+                    if (confirmation.equals("yes") || confirmation.equals("y")) {
+                        break;
+                    } else {
+                        System.out.println("Please select items again.");
+                    }
+                } else {
+                    System.out.println("Please select between 3 and 5 items.");
+                }
+            }
+    
+            int pollId = pollService.createPoll(currentUser.getUserId(), new java.sql.Date(System.currentTimeMillis()));
+            pollService.addItemsToPoll(pollId, selectedItems);
+            System.out.println("Poll created successfully with ID: " + pollId);
+    
+        } catch (IOException e) {
+            System.err.println("Error creating poll: " + e.getMessage());
+        }
     }
+    
 
     private void logout() {
         try {

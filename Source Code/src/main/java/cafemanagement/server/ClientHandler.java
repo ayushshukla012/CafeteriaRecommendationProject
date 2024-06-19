@@ -6,6 +6,7 @@ import cafemanagement.client.Chef;
 import cafemanagement.client.Employee;
 import cafemanagement.model.User;
 import cafemanagement.service.UserService;
+import cafemanagement.service.PollService;
 
 import java.io.*;
 import java.net.Socket;
@@ -23,10 +24,12 @@ public class ClientHandler implements Runnable {
     private User loggedInUser;
     private String loggedInRole;
     private final Queue<String> notificationsQueue = new ConcurrentLinkedQueue<>();
+    private final PollService pollService;
 
     public ClientHandler(Socket clientSocket, ConcurrentHashMap<String, ClientHandler> clients) {
         this.clientSocket = clientSocket;
         this.userService = new UserService();
+        this.pollService = new PollService();
         this.clients = clients;
     }
 
@@ -58,7 +61,7 @@ public class ClientHandler implements Runnable {
 
             if (loggedInUser != null) {
                 clients.remove(loggedInUser.getName());
-                sendNotificationToAll("User " + loggedInUser.getName() + " has logged out.");
+                System.out.println("User " + loggedInUser.getName() + " has logged out.");
             }
         }
     }
@@ -113,19 +116,11 @@ public class ClientHandler implements Runnable {
             loggedInUser = user;
             loggedInRole = roleName;
             clients.put(loggedInUser.getName(), this);
-            sendNotificationToAll("User " + loggedInUser.getName() + " has logged in.");
+            System.out.println("User " + loggedInUser.getName() + " has logged in.");
             String currentDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
             writer.println("SUCCESS: Login successful.  Welcome " + user.getName() + "! " + currentDate);
         } else {
             writer.println("ERROR: Invalid credentials or role. Please try again.");
-        }
-    }
-
-    private void sendNotificationToAll(String message) {
-        for (ClientHandler clientHandler : clients.values()) {
-            if (clientHandler != this) {
-                clientHandler.writer.println("NOTIFICATION: " + message);
-            }
         }
     }
 }

@@ -16,12 +16,6 @@ import java.sql.Timestamp;
 public class NotificationService {
 
     public void sendNotification(int senderId, String notificationType, int menuItemId, String message, List<Integer> receiverIds) {
-        System.out.println("Notification Details:");
-        System.out.println("Sender ID: " + senderId);
-        System.out.println("Notification Type: " + notificationType);
-        System.out.println("Menu Item ID: " + menuItemId);
-        System.out.println("Message: " + message);
-        System.out.println("Receiver IDs: " + receiverIds);
         String insertNotificationSQL = "INSERT INTO Notifications (senderId, notificationType, menuItemId, message) VALUES (?, ?, ?, ?)";
         String insertUserNotificationSQL = "INSERT INTO UserNotifications (receiverId, notificationId) VALUES (?, ?)";
 

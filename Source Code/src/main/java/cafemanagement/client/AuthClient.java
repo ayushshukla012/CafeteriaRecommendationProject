@@ -37,7 +37,7 @@ public class AuthClient {
                 }
 
                 if (login(writer, userInput)) {
-                 //   receiveNotifications();
+                   receiveNotifications();
                     switch (roleName) {
                         case "1":
                             new Employee(loggedInUser, notificationsQueue, writer, userInput).start();
@@ -110,7 +110,7 @@ public class AuthClient {
         }
     }
 
-    /*
+    
     private static void receiveNotifications() {
         Thread notificationThread = new Thread(() -> {
             try {
@@ -129,5 +129,5 @@ public class AuthClient {
         });
         notificationThread.start();
     }
-        */
+        
 }
