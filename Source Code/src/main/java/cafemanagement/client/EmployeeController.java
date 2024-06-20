@@ -1,10 +1,14 @@
 package cafemanagement.client;
 
 import cafemanagement.model.User;
+import cafemanagement.service.FeedbackService;
+import cafemanagement.service.MenuItemService;
 import cafemanagement.service.NotificationService;
 import cafemanagement.service.PollService;
 import cafemanagement.model.Notification;
 import cafemanagement.model.PollItem;
+import cafemanagement.model.Feedback;
+import cafemanagement.model.Menu;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,7 +22,9 @@ public class EmployeeController {
     private PrintWriter writer;
     private BufferedReader userInput;
     private NotificationService notificationService;
-      private PollService pollService;
+    private PollService pollService;
+    private MenuItemService menuItemService;
+    private FeedbackService feedbackService;
 
     public EmployeeController(User currentUser, Queue<String> notificationsQueue, PrintWriter writer, BufferedReader userInput) {
         this.currentUser = currentUser;
@@ -27,6 +33,8 @@ public class EmployeeController {
         this.userInput = userInput;
         this.notificationService = new NotificationService();
         this.pollService = new PollService();
+        this.menuItemService = new MenuItemService();
+        this.feedbackService = new FeedbackService();
     }
 
     public void start() {
@@ -47,9 +55,8 @@ public class EmployeeController {
         System.out.println("1. See notifications");
         System.out.println("2. Provide Feedback");
         System.out.println("3. Select Meal for tomorrow");
-        System.out.println("4. Vote for Meal");
-        System.out.println("5. See Menu");
-        System.out.println("6. Logout");
+        System.out.println("4. See Menu");
+        System.out.println("5. Logout");
     }
 
     public void handleInput(String input) {
@@ -64,12 +71,9 @@ public class EmployeeController {
                 selectMealForTomorrow();
                 break;
             case "4":
-                voteForMeal();
-                break;
-            case "5":
                 seeMenu();
                 break;
-            case "6":
+            case "5":
                 logout();
                 return;
             default:
@@ -94,14 +98,84 @@ public class EmployeeController {
     }
 
     private void provideFeedback() {
+        int employeeId = getUserIdByCurrentUser(currentUser);
         try {
-            System.out.println("Enter your feedback:");
-            String feedback = userInput.readLine().trim();
-            // Send feedback to server or process it here
-            System.out.println("Thank you for your feedback!");
-        } catch (IOException e) {
-            System.err.println("Error reading feedback: " + e.getMessage());
+            int categoryId = selectFoodCategory();
+            if (categoryId == -1) {
+                System.out.println("Invalid category selected.");
+                return;
+            }
+    
+            List<Menu> menuItems = menuItemService.getMenuItemsDetailsByCategory(categoryId);
+            if (menuItems.isEmpty()) {
+                System.out.println("No items found in the selected category.");
+                return;
+            }
+    
+            System.out.println("Menu items for category:");
+            for (int i = 0; i < menuItems.size(); i++) {
+                System.out.println((i + 1) + ". " + menuItems.get(i));
+            }
+    
+            System.out.println("Select a menu item number:");
+            int menuItemNumber = Integer.parseInt(userInput.readLine().trim());
+            if (menuItemNumber < 1 || menuItemNumber > menuItems.size()) {
+                System.out.println("Invalid menu item number selected.");
+                return;
+            }
+    
+            Menu selectedItem = menuItems.get(menuItemNumber - 1);
+    
+            Feedback existingFeedback = feedbackService.getFeedbackByEmployeeAndMenu(employeeId, selectedItem.getMenuId());
+            if (existingFeedback != null) {
+                System.out.println("Existing feedback found:");
+                displayFeedback(existingFeedback);
+                System.out.println("Do you want to update the feedback? (yes/no)");
+                String updateResponse = userInput.readLine().trim().toLowerCase();
+                if (!"yes".equals(updateResponse)) {
+                    System.out.println("Feedback update canceled.");
+                    return;
+                }
+            }
+    
+            Feedback newFeedback = collectFeedbackDetails(selectedItem.getMenuId(), employeeId);
+            if (existingFeedback != null) {
+                feedbackService.updateFeedback(newFeedback);
+                System.out.println("Feedback updated successfully.");
+            } else {
+                feedbackService.storeFeedback(newFeedback);
+                System.out.println("Thank you for your feedback!");
+            }
+        } catch (IOException | NumberFormatException e) {
+            System.err.println("Error: " + e.getMessage());
         }
+    }
+
+    private Feedback collectFeedbackDetails(int menuId, int employeeId) throws IOException {
+        Feedback feedback = new Feedback();
+        feedback.setMenuId(menuId);
+        feedback.setEmployeeId(employeeId);
+    
+        System.out.println("Enter quality (1-5):");
+        feedback.setQuality(Integer.parseInt(userInput.readLine().trim()));
+    
+        System.out.println("Enter value for money (1-5):");
+        feedback.setValueForMoney(Integer.parseInt(userInput.readLine().trim()));
+    
+        System.out.println("Enter quantity (1-5):");
+        feedback.setQuantity(Integer.parseInt(userInput.readLine().trim()));
+    
+        System.out.println("Enter taste (1-5):");
+        feedback.setTaste(Integer.parseInt(userInput.readLine().trim()));
+    
+        System.out.println("Enter rating (1-5):");
+        feedback.setRating(Integer.parseInt(userInput.readLine().trim()));
+    
+        System.out.println("Enter comments (optional):");
+        feedback.setComment(userInput.readLine().trim());
+    
+        feedback.setFeedbackDate(new java.sql.Date(System.currentTimeMillis()));
+        return feedback;
     }
 
     private void selectMealForTomorrow() {
@@ -138,10 +212,6 @@ public class EmployeeController {
         } catch (IOException e) {
             System.err.println("Error reading input: " + e.getMessage());
         }
-    }
-
-    private void voteForMeal() {
-        System.out.println("Voting for meal...");
     }
 
     private void seeMenu() {
@@ -181,5 +251,30 @@ public class EmployeeController {
         System.out.println("Voting for menu item ID: " + menuItemId);
         pollService.castVote(pollId, menuItemId, employeeId);
         System.out.println("Vote for " + selectedPollItem.getItemName() + " recorded.");
+    }
+
+        private int selectFoodCategory() throws IOException {
+        System.out.println("Select food category (1 = Breakfast, 2 = Lunch, 3 = Dinner):");
+        String categoryInput = userInput.readLine().trim();
+        switch (categoryInput) {
+            case "1":
+                return 1;
+            case "2":
+                return 2;
+            case "3":
+                return 3;
+            default:
+                return -1;
+        }
+    }
+
+    private void displayFeedback(Feedback feedback) {
+        System.out.println("Quality: " + feedback.getQuality());
+        System.out.println("Value for Money: " + feedback.getValueForMoney());
+        System.out.println("Quantity: " + feedback.getQuantity());
+        System.out.println("Taste: " + feedback.getTaste());
+        System.out.println("Rating: " + feedback.getRating());
+        System.out.println("Comments: " + feedback.getComment());
+        System.out.println("Date: " + feedback.getFeedbackDate());
     }
 }

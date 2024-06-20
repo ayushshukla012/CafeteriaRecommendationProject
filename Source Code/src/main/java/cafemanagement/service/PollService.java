@@ -13,10 +13,6 @@ public class PollService {
         this.pollDAO = new PollDAO();
     }
 
-    public List<String> getMenuItemsByCategory(int categoryId) {
-        return pollDAO.getMenuItemsByCategory(categoryId);
-    }
-
     public int createPoll(int chefId, Date pollDate) {
         return pollDAO.createPoll(chefId, pollDate);
     }

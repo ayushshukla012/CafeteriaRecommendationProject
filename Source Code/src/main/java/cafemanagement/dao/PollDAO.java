@@ -10,28 +10,6 @@ import java.util.List;
 
 public class PollDAO {
 
-    // Breakfast = 1, Lunch = 2, Dinner = 3
-    public List<String> getMenuItemsByCategory(int categoryId) {
-        List<String> menuItems = new ArrayList<>();
-        String query = "SELECT name FROM Menu WHERE categoryId = ?";
-
-        try (Connection conn = DatabaseUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-
-            pstmt.setInt(1, categoryId);
-            ResultSet rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                menuItems.add(rs.getString("name"));
-            }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return menuItems;
-    }
-
     // Method to create a new poll
     public int createPoll(int chefId, Date pollDate) {
         String insertPollQuery = "INSERT INTO Polls (chefId, pollDate) VALUES (?, ?)";

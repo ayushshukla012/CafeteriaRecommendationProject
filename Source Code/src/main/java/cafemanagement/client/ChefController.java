@@ -4,6 +4,7 @@ import cafemanagement.model.User;
 import cafemanagement.service.NotificationService;
 import cafemanagement.service.UserService;
 import cafemanagement.service.PollService;
+import cafemanagement.service.MenuItemService;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -20,6 +21,7 @@ public class ChefController {
     private NotificationService notificationService;
     private UserService userService;
     private PollService pollService;
+    private MenuItemService menuItemService;
     
 
     public ChefController(User currentUser, PrintWriter writer, BufferedReader userInput) {
@@ -29,6 +31,7 @@ public class ChefController {
         this.notificationService = new NotificationService();
         this.userService = new UserService();
         this.pollService = new PollService();
+        this.menuItemService = new MenuItemService();
     }
 
     public void start() {
@@ -48,9 +51,10 @@ public class ChefController {
         System.out.println("Chef Menu:");
         System.out.println("1. Send notifications");
         System.out.println("2. View user feedback");
-        System.out.println("3. Generate Feedback Report");
+        System.out.println("3. Generate feedback report");
         System.out.println("4. Send dishes to review");
-        System.out.println("5. Logout");
+        System.out.println("5. Ask user for feedback");
+        System.out.println("6. Logout");
     }
 
     public void handleInput(String input) {
@@ -60,13 +64,13 @@ public class ChefController {
                     sendNotification();
                     break;
                 case "2":
-                    viewUserFeedback();
+                    viewMenuWithFeedback();
                     break;
                 case "3":
                     generateFeedbackReport();
                     break;
                 case "4":
-                    sendDishesToReview();
+                    sendDishesToReview(); //Add recommendation engine
                     break;
                 case "5":
                     askForFeedback();
@@ -106,8 +110,8 @@ public class ChefController {
         }
     }
 
-    private void viewUserFeedback() {
-        System.out.println("Viewing user feedback...");
+    private void viewMenuWithFeedback() {
+        System.out.println("Viewing Menu With Feedback...");
     }
 
     private void generateFeedbackReport() {
@@ -124,7 +128,7 @@ public class ChefController {
             int categoryId = readIntegerInput();
             System.out.println("categoryId: " + categoryId);
     
-            List<String> menuItems = pollService.getMenuItemsByCategory(categoryId);
+            List<String> menuItems = menuItemService.getMenuItemsByCategory(categoryId);
             if (menuItems.isEmpty()) {
                 System.out.println("No items found for the selected category.");
                 return;
