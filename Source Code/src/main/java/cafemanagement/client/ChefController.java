@@ -13,7 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Chef {
+public class ChefController {
     private User currentUser;
     private PrintWriter writer;
     private BufferedReader userInput;
@@ -22,7 +22,7 @@ public class Chef {
     private PollService pollService;
     
 
-    public Chef(User currentUser, PrintWriter writer, BufferedReader userInput) {
+    public ChefController(User currentUser, PrintWriter writer, BufferedReader userInput) {
         this.currentUser = currentUser;
         this.writer = writer;
         this.userInput = userInput;
@@ -69,6 +69,9 @@ public class Chef {
                     sendDishesToReview();
                     break;
                 case "5":
+                    askForFeedback();
+                    break;
+                case "6":
                     logout();
                     return;
                 default:
@@ -109,6 +112,10 @@ public class Chef {
 
     private void generateFeedbackReport() {
         System.out.println("Generating feedback report...");
+    }
+
+    private void askForFeedback() {
+        System.out.println("ask user For Feedback");
     }
 
     private void sendDishesToReview() {

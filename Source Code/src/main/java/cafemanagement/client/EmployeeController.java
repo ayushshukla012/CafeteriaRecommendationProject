@@ -12,7 +12,7 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Queue;
 
-public class Employee {
+public class EmployeeController {
     private User currentUser;
     private Queue<String> notificationsQueue;
     private PrintWriter writer;
@@ -20,7 +20,7 @@ public class Employee {
     private NotificationService notificationService;
       private PollService pollService;
 
-    public Employee(User currentUser, Queue<String> notificationsQueue, PrintWriter writer, BufferedReader userInput) {
+    public EmployeeController(User currentUser, Queue<String> notificationsQueue, PrintWriter writer, BufferedReader userInput) {
         this.currentUser = currentUser;
         this.notificationsQueue = notificationsQueue;
         this.writer = writer;

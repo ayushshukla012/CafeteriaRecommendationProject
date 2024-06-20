@@ -6,12 +6,12 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-public class Admin {
+public class AdminController {
     private User currentUser;
     private PrintWriter writer;
     private BufferedReader userInput;
 
-    public Admin(User currentUser, PrintWriter writer, BufferedReader userInput) {
+    public AdminController(User currentUser, PrintWriter writer, BufferedReader userInput) {
         this.currentUser = currentUser;
         this.writer = writer;
         this.userInput = userInput;
