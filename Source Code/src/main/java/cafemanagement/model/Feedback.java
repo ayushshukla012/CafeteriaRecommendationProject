@@ -14,7 +14,9 @@ public class Feedback {
     private String comment;
     private Date feedbackDate;
 
-    // Getter and Setter for feedbackId
+    public Feedback() {
+    }
+
     public int getFeedbackId() {
         return feedbackId;
     }
@@ -23,7 +25,6 @@ public class Feedback {
         this.feedbackId = feedbackId;
     }
 
-    // Getter and Setter for employeeId
     public int getEmployeeId() {
         return employeeId;
     }
@@ -32,7 +33,6 @@ public class Feedback {
         this.employeeId = employeeId;
     }
 
-    // Getter and Setter for menuId
     public int getMenuId() {
         return menuId;
     }
@@ -41,7 +41,6 @@ public class Feedback {
         this.menuId = menuId;
     }
 
-    // Getter and Setter for quality
     public int getQuality() {
         return quality;
     }
@@ -50,7 +49,6 @@ public class Feedback {
         this.quality = quality;
     }
 
-    // Getter and Setter for valueForMoney
     public int getValueForMoney() {
         return valueForMoney;
     }
@@ -59,7 +57,6 @@ public class Feedback {
         this.valueForMoney = valueForMoney;
     }
 
-    // Getter and Setter for quantity
     public int getQuantity() {
         return quantity;
     }
@@ -68,7 +65,6 @@ public class Feedback {
         this.quantity = quantity;
     }
 
-    // Getter and Setter for taste
     public int getTaste() {
         return taste;
     }
@@ -77,7 +73,6 @@ public class Feedback {
         this.taste = taste;
     }
 
-    // Getter and Setter for rating
     public int getRating() {
         return rating;
     }
@@ -86,7 +81,6 @@ public class Feedback {
         this.rating = rating;
     }
 
-    // Getter and Setter for comment
     public String getComment() {
         return comment;
     }
@@ -95,7 +89,6 @@ public class Feedback {
         this.comment = comment;
     }
 
-    // Getter and Setter for feedbackDate
     public Date getFeedbackDate() {
         return feedbackDate;
     }

@@ -1,5 +1,7 @@
 package cafemanagement.service;
 
+import java.util.List;
+
 import cafemanagement.dao.FeedbackDAO;
 import cafemanagement.model.Feedback;
 
@@ -18,7 +20,15 @@ public class FeedbackService {
         feedbackDAO.storeFeedback(feedback);
     }
 
-    public void updateFeedback(Feedback feedback) {
-        feedbackDAO.updateFeedback(feedback);
+    public boolean updateFeedback(Feedback feedback) {
+        return feedbackDAO.updateFeedback(feedback);
+    }
+
+    public List<Feedback> getAllFeedback() {
+        return feedbackDAO.getAllFeedback();
+    }
+
+    public Feedback getFeedbackById(int feedbackId) {
+        return getFeedbackById(feedbackId);
     }
 }

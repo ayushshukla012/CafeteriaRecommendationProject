@@ -140,6 +140,7 @@ public class EmployeeController {
     
             Feedback newFeedback = collectFeedbackDetails(selectedItem.getMenuId(), employeeId);
             if (existingFeedback != null) {
+                newFeedback.setFeedbackId(existingFeedback.getFeedbackId());
                 feedbackService.updateFeedback(newFeedback);
                 System.out.println("Feedback updated successfully.");
             } else {

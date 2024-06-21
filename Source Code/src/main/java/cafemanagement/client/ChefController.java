@@ -5,6 +5,7 @@ import cafemanagement.service.NotificationService;
 import cafemanagement.service.UserService;
 import cafemanagement.service.PollService;
 import cafemanagement.service.MenuItemService;
+import cafemanagement.service.RecommendationService;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -12,6 +13,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class ChefController {
@@ -22,6 +24,7 @@ public class ChefController {
     private UserService userService;
     private PollService pollService;
     private MenuItemService menuItemService;
+    private RecommendationService recommendationService;
     
 
     public ChefController(User currentUser, PrintWriter writer, BufferedReader userInput) {
@@ -32,6 +35,11 @@ public class ChefController {
         this.userService = new UserService();
         this.pollService = new PollService();
         this.menuItemService = new MenuItemService();
+        try {
+            this.recommendationService = new RecommendationService();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void start() {
@@ -54,7 +62,8 @@ public class ChefController {
         System.out.println("3. Generate feedback report");
         System.out.println("4. Send dishes to review");
         System.out.println("5. Ask user for feedback");
-        System.out.println("6. Logout");
+        System.out.println("6. Get recommendation");
+        System.out.println("7. Logout");
     }
 
     public void handleInput(String input) {
@@ -76,6 +85,9 @@ public class ChefController {
                     askForFeedback();
                     break;
                 case "6":
+                    getRecommendation();
+                    break;
+                case "7":
                     logout();
                     return;
                 default:
@@ -246,5 +258,16 @@ public class ChefController {
             messageBuilder.append(line).append("\n");
         }
         return messageBuilder.toString().trim();
+    }
+
+    private void getRecommendation() {
+        System.out.println("Calculating recommendation for you. Please wait!!!");
+        recommendationService.recommendFood();
+        try {
+            recommendationService.awaitTermination();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("Recommendations have been processed successfully.");
     }
 }
