@@ -4,8 +4,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -15,14 +16,14 @@ import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
 import cafemanagement.dao.FeedbackDAO;
-import cafemanagement.dao.RecommendationDAO;
 import cafemanagement.model.Feedback;
 import cafemanagement.model.Recommendation;
+import cafemanagement.model.Menu;
 
 public class RecommendationService {
 
     private final FeedbackDAO feedbackDAO = new FeedbackDAO();
-    private final RecommendationDAO recommendationDAO = new RecommendationDAO();
+    private final MenuItemService menuItemService = new MenuItemService();
     private final List<String> positiveWords;
     private final List<String> negativeWords;
     private final ExecutorService executorService;
@@ -40,26 +41,55 @@ public class RecommendationService {
         }
     }
 
-    public void recommendFood() {
+    public List<Map<String, Object>> recommendFood(int menuCategoryId) throws InterruptedException {
         List<Feedback> feedbacks = feedbackDAO.getAllFeedback();
         Map<Integer, List<Feedback>> feedbackByMenu = groupFeedbackByMenuId(feedbacks);
+        List<Menu> menuItems = menuItemService.getMenuItemsDetailsByCategory(menuCategoryId);
+        List<Map<String, Object>> recommendedItems = new ArrayList<>();
 
-        for (Map.Entry<Integer, List<Feedback>> entry : feedbackByMenu.entrySet()) {
-            int menuId = entry.getKey();
-            List<Feedback> menuFeedbacks = entry.getValue();
+        List<Recommendation> recommendations = new ArrayList<>();
+
+        for (Menu menuItem : menuItems) {
+            int menuId = menuItem.getMenuId();
+            List<Feedback> menuFeedbacks = feedbackByMenu.getOrDefault(menuId, new ArrayList<>());
             double averageRating = calculateFeedbackAverage(menuFeedbacks);
+            String sentiment = calculateSentiment(menuFeedbacks);
 
-            executorService.submit(() -> {
-                String sentiment = calculateSentiment(menuFeedbacks);
-                Recommendation recommendation = new Recommendation(menuId, averageRating, sentiment);
-                System.out.println("MenuID: " + recommendation.getMenuId() +
-                                "Average Rating: " + recommendation.getAverageRating() +
-                                "Sentiment Analysis:" + recommendation.getSentimentAnalysis());
-                recommendationDAO.saveRecommendation(recommendation);
-
-            });
+            recommendations.add(new Recommendation(menuId, averageRating, sentiment));
         }
-        executorService.shutdown();
+
+        recommendations.sort(Comparator.comparingDouble(Recommendation::getAverageRating).reversed());
+
+        List<Recommendation> veryPositiveRecommendations = recommendations.stream()
+                .filter(r -> "very positive".equals(r.getSentimentAnalysis()))
+                .limit(5)
+                .collect(Collectors.toList());
+
+        if (veryPositiveRecommendations.size() < 5) {
+            List<Recommendation> positiveRecommendations = recommendations.stream()
+                    .filter(r -> "positive".equals(r.getSentimentAnalysis()))
+                    .limit(5 - veryPositiveRecommendations.size())
+                    .collect(Collectors.toList());
+
+            veryPositiveRecommendations.addAll(positiveRecommendations);
+        }
+
+        for (Recommendation recommendation : veryPositiveRecommendations) {
+            Menu menuItem = menuItemService.getMenuItemById(recommendation.getMenuId());
+
+            Map<String, Object> menuItemWithDetails = new HashMap<>();
+            menuItemWithDetails.put("menuId", menuItem.getMenuId());
+            menuItemWithDetails.put("name", menuItem.getName());
+            menuItemWithDetails.put("categoryId", menuItem.getCategoryId());
+            menuItemWithDetails.put("price", menuItem.getPrice());
+            menuItemWithDetails.put("availability", menuItem.isAvailability());
+            menuItemWithDetails.put("averageRating", recommendation.getAverageRating());
+            menuItemWithDetails.put("sentiment", recommendation.getSentimentAnalysis());
+
+            recommendedItems.add(menuItemWithDetails);
+        }
+
+        return recommendedItems;
     }
 
     private Map<Integer, List<Feedback>> groupFeedbackByMenuId(List<Feedback> feedbacks) {
@@ -89,6 +119,34 @@ public class RecommendationService {
                 } else if (negativeWords.contains(word)) {
                     negativeCount++;
                 }
+            }
+        }
+        int totalWords = positiveCount + negativeCount;
+        double sentimentScore = (double) (positiveCount - negativeCount) / totalWords;
+
+        if (sentimentScore >= 0.5) {
+            return "very positive";
+        } else if (sentimentScore > 0) {
+            return "positive";
+        } else if (sentimentScore == 0) {
+            return "neutral";
+        } else if (sentimentScore > -0.5) {
+            return "negative";
+        } else {
+            return "very negative";
+        }
+    }
+
+    public String calculateUserFeedbackSentiment(String feedback) {
+        int positiveCount = 0;
+        int negativeCount = 0;
+
+        String[] words = feedback.split("\\s+");
+        for (String word : words) {
+            if (positiveWords.contains(word)) {
+                positiveCount++;
+            } else if (negativeWords.contains(word)) {
+                negativeCount++;
             }
         }
         int totalWords = positiveCount + negativeCount;

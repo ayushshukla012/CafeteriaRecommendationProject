@@ -35,4 +35,16 @@ public class MenuItemService {
     public boolean deleteMenuItem(int menuId) {
         return menuItemDAO.deleteMenuItem(menuId);
     }
+
+    public String getMenuNameById(int menuId) {
+        return menuItemDAO.getMenuNameById(menuId);
+    }
+
+    public List<Menu> getAllMenuItems() {
+        return menuItemDAO.getAllMenuItems();
+    }
+
+    public Menu getMenuItemById(int menuId) {
+        return menuItemDAO.getMenuItemById(menuId);
+    }
 }

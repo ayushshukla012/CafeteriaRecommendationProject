@@ -134,4 +134,79 @@ public class MenuItemDAO {
         
         return menuItems;
     }
+
+    public String getMenuNameById(int menuId) {
+        String query = "SELECT name FROM Menu WHERE menuId = ?";
+        String menuName = null;
+
+        try (Connection conn = DatabaseUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setInt(1, menuId);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                menuName = rs.getString("name");
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error fetching menu name: " + e.getMessage());
+        }
+
+        return menuName;
+    }
+
+    public List<Menu> getAllMenuItems() {
+        List<Menu> menuItems = new ArrayList<>();
+        String query = "SELECT menuId, name, categoryId, price, availability FROM Menu";
+
+        try (Connection connection =  DatabaseUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query);
+             ResultSet resultSet = statement.executeQuery()) {
+
+            while (resultSet.next()) {
+                Menu menuItem = new Menu();
+                menuItem.setMenuId(resultSet.getInt("menuId"));
+                menuItem.setName(resultSet.getString("name"));
+                menuItem.setCategoryId(resultSet.getInt("categoryId"));
+                menuItem.setPrice(resultSet.getFloat("price"));
+                menuItem.setAvailability(resultSet.getBoolean("availability"));
+
+                menuItems.add(menuItem);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return menuItems;
+    }
+
+    public Menu getMenuItemById(int menuId) {
+        Menu menuItem = null;
+        String query = "SELECT menuId, name, categoryId, price, availability FROM Menu WHERE menuId = ?";
+    
+        try (Connection connection = DatabaseUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+    
+            statement.setInt(1, menuId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    menuItem = new Menu();
+                    menuItem.setMenuId(resultSet.getInt("menuId"));
+                    menuItem.setName(resultSet.getString("name"));
+                    menuItem.setCategoryId(resultSet.getInt("categoryId"));
+                    menuItem.setPrice(resultSet.getFloat("price"));
+                    menuItem.setAvailability(resultSet.getBoolean("availability"));
+                }
+            }
+    
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    
+        return menuItem;
+    }
+
+
 }
