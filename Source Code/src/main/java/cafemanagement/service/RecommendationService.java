@@ -107,7 +107,7 @@ public class RecommendationService {
         return (averageQuality + averageValueForMoney + averageQuantity + averageTaste + averageRating) / 5;
     }
 
-    private String calculateSentiment(List<Feedback> feedbacks) {
+    public String calculateSentiment(List<Feedback> feedbacks) {
         int positiveCount = 0;
         int negativeCount = 0;
 

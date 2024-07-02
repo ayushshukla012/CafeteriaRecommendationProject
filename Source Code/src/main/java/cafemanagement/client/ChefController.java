@@ -63,18 +63,19 @@ public class ChefController {
     private void displayMenu() {
         System.out.println("Chef Menu:");
         System.out.println("1. Send employee notifications");
-        System.out.println("2. View Menu");
+        System.out.println("2. View menu");
         System.out.println("3. Generate feedback report");
         System.out.println("4. Send dishes to review");
         System.out.println("5. Get recommendation");
-        System.out.println("6. Logout");
+        System.out.println("6. Show discarded menu");
+        System.out.println("7. Logout");
     }
 
     public void handleInput(String input) {
         try {
             switch (input) {
                 case "1":
-                    sendNotification(); // General
+                    sendEmployeeNotification(); // General
                     break;
                 case "2":
                     viewMenu();
@@ -89,6 +90,9 @@ public class ChefController {
                     getRecommendation(); // Get sentiment for a feedback
                     break;
                 case "6":
+                    getDiscardedMenu();
+                    break;
+                case "7":
                     logout();
                     return;
                 default:
@@ -99,7 +103,18 @@ public class ChefController {
         }
     }
 
-    private void sendNotification() throws IOException {
+    private void sendNotification(String message, String notificationType, int menuItemId) {
+        try {
+            List<Integer> receiverIds = getAllEmployeeId(); // Send to all employees
+            int senderId = getUserIdByCurrentUser(currentUser); // Current User id
+            notificationService.sendNotification(senderId, notificationType, menuItemId, message, receiverIds);
+            System.out.println("Notification sent.");
+        } catch (Exception e) {
+            System.err.println("Error while sending notification: " + e);
+        }
+    }
+
+    private void sendEmployeeNotification() throws IOException {
         try {
             String notificationType = "Recommendation";
 
@@ -107,16 +122,10 @@ public class ChefController {
             int menuItemId = readIntegerInput();
 
             System.out.println("Enter your message for Notification:");
-            String message = readNotificationMessage();
+            String message = readNotificationMessage();            
 
-            List<Integer> receiverIds = getAllEmployeeId(); // Send to all employees
-
-            int senderId = getUserIdByCurrentUser(currentUser); // Current User id
-
-            notificationService.sendNotification(senderId, notificationType, menuItemId, message, receiverIds);
-
-            writer.println("ChefId: " + senderId + "Notification for " + notificationType + " sent.");
-            System.out.println("Notification sent.");
+            sendNotification(message, notificationType, menuItemId);
+            writer.println("Notification for " + notificationType + " sent.");
         } catch (IOException e) {
             writer.println("ChefId: " + getUserIdByCurrentUser(currentUser) + "Error reading notification.");
             System.err.println("Error sending notification: " + e.getMessage());
@@ -276,6 +285,145 @@ public class ChefController {
 
         } catch (InterruptedException | IOException e) {
             System.err.println("Error creating poll: " + e.getMessage());
+        }
+    }
+
+    private void getDiscardedMenu() {
+        System.out.println("Fetching discarded menu items...");
+
+        List<Feedback> feedbackList = feedbackService.getAllFeedback();
+        List<Menu> menuItems = menuItemService.getAllMenuItems();
+
+        Map<Integer, List<Feedback>> feedbackByMenuId = feedbackList.stream()
+                .collect(Collectors.groupingBy(Feedback::getMenuId));
+
+        List<Integer> discardMenuIds = new ArrayList<>();
+
+        for (Map.Entry<Integer, List<Feedback>> entry : feedbackByMenuId.entrySet()) {
+            int menuId = entry.getKey();
+            List<Feedback> feedbacks = entry.getValue();
+
+            double averageRating = feedbacks.stream()
+                    .mapToInt(Feedback::getRating)
+                    .average()
+                    .orElse(0.0);
+
+            String sentiment = recommendationService.calculateSentiment(feedbacks);
+
+            if (averageRating < 2 && sentiment.equals("very negative")) {
+                discardMenuIds.add(menuId);
+            }
+        }
+
+        if (discardMenuIds.isEmpty()) {
+            System.out.println("No items to discard based on the criteria.");
+            return;
+        }
+
+        List<Menu> discardedItems = menuItems.stream()
+                .filter(menu -> discardMenuIds.contains(menu.getMenuId()))
+                .collect(Collectors.toList());
+
+        System.out.println("+----------+--------------------+---------+-------------+--------------+----------------+");
+        System.out.println("| Menu ID  | Item Name          | Price   | Availability | Average Rating | Sentiment      |");
+        System.out.println("+----------+--------------------+---------+-------------+--------------+----------------+");
+
+        for (Menu item : discardedItems) {
+            List<Feedback> itemFeedbacks = feedbackByMenuId.get(item.getMenuId());
+            double averageRating = itemFeedbacks.stream()
+                    .mapToInt(Feedback::getRating)
+                    .average()
+                    .orElse(0.0);
+
+            String sentiment = recommendationService.calculateSentiment(itemFeedbacks);
+
+            System.out.printf("| %-8d | %-18s | %-7.2f | %-11s | %-13.2f | %-14s |\n",
+                    item.getMenuId(), item.getName(), item.getPrice(), item.isAvailability() ? "Yes" : "No",
+                    averageRating, sentiment);
+        }
+
+        System.out.println("+----------+--------------------+---------+-------------+--------------+----------------+");
+        taskForDiscardedMenu();
+    }
+
+    private void taskForDiscardedMenu() {
+        boolean exit = false;
+        while (!exit) {
+            displayOptions();
+            try {
+                int choice = readIntegerInput();
+                switch (choice) {
+                    case 1:
+                        removeFoodItemFromMenu();
+                        break;
+                    case 2:
+                        getDetailedFeedback();
+                        break;
+                    case 3:
+                        exit = true;
+                        System.out.println("Exiting Chef/Admin console.");
+                        break;
+                    default:
+                        System.out.println("Invalid choice. Please select again.");
+                }
+            } catch(IOException e) {
+                System.err.println("Error in discarded menu: " + e);
+            }
+        }
+    }
+
+    private void displayOptions() {
+        System.out.println("\nConsole Options:");
+        System.out.println("1. Remove the Food Item from Menu List (Should be done once a month)");
+        System.out.println("2. Get Detailed Feedback (Should be done once a month)");
+        System.out.println("3. Exit");
+
+        System.out.print("Enter your choice: ");
+    }
+
+    private void removeFoodItemFromMenu() {
+        try {
+            System.out.print("Enter the food item ID to remove from the menu: ");
+            int menuItemId = Integer.parseInt(userInput.readLine().trim());
+
+            Menu menuItem = menuItemService.getMenuItemById(menuItemId);
+            if (menuItem == null) {
+                System.out.println("Food item not found in the menu.");
+                return;
+            }
+
+            menuItemService.deleteMenuItem(menuItemId);
+            System.out.println(menuItem.getName() + " has been removed from the menu.");
+        }  catch(IOException e) {
+            System.err.println("Error in remove food item from menu: " + e);
+        }
+    }
+
+    private void getDetailedFeedback() {
+        try {
+            System.out.println("\nRolling out detailed feedback questions...");
+            System.out.print("Enter the food item ID to gather feedback for: ");
+            int menuItemId = Integer.parseInt(userInput.readLine().trim());
+
+            Menu menuItem = menuItemService.getMenuItemById(menuItemId);
+            if (menuItem == null) {
+                System.out.println("Food item not found in the menu.");
+                return;
+            }
+
+            String itemName = menuItem.getName();
+            String question1 = "Q1. What didn't you like about " + itemName + "?";
+            String question2 = "Q2. How would you like " + itemName + " to taste?";
+            String question3 = "Q3. Share your mom's recipe.";
+
+            String message = "We are trying to improve your experience with " + itemName + ". Please provide your feedback and help us.\n"
+                    + question1 + "\n" + question2 + "\n" + question3;
+
+            sendNotification(message, "FeedbackRequest", menuItemId);
+        } catch (NumberFormatException e) {
+            System.err.println("Invalid input. Please enter a valid menu item ID.");
+        } catch (Exception e) {
+            System.err.println("Error gathering detailed feedback: " + e);
         }
     }
 

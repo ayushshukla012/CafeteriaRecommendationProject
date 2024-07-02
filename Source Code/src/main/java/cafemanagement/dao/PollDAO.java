@@ -42,6 +42,7 @@ public class PollDAO {
              PreparedStatement pstmt = conn.prepareStatement(insertPollItemQuery)) {
 
             for (int menuItemId : menuItemIds) {
+                System.out.println(pollId + " " + menuItemId);
                 pstmt.setInt(1, pollId);
                 pstmt.setInt(2, menuItemId);
                 pstmt.addBatch();

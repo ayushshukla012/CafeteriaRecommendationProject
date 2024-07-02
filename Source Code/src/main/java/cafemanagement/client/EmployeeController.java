@@ -71,7 +71,7 @@ public class EmployeeController {
                 selectMealForTomorrow();
                 break;
             case "4":
-                seeMenu();
+                viewMenu();
                 break;
             case "5":
                 logout();
@@ -215,8 +215,26 @@ public class EmployeeController {
         }
     }
 
-    private void seeMenu() {
-        System.out.println("Seeing menu...");
+    private void viewMenu() {
+        System.out.println("Viewing Menu With Feedback...");
+        List<Menu> menuItems = menuItemService.getAllMenuItems();
+
+        if (menuItems.isEmpty()) {
+            System.out.println("No menu items found.");
+            return;
+        }
+
+        System.out.println("Menu items:");
+        System.out.println(
+                "-------------------------------------------------------------------------------------------------------");
+        System.out.printf("| %-5s | %-20s | %-10s | %-10s | %-15s |%n", "ID", "Name", "Category", "Price",
+                "Availability");
+        System.out.println(
+                "-------------------------------------------------------------------------------------------------------");
+
+        printCategory(menuItems, 1, "Breakfast");
+        printCategory(menuItems, 2, "Lunch");
+        printCategory(menuItems, 3, "Dinner");
     }
 
     private void logout() {
@@ -277,5 +295,25 @@ public class EmployeeController {
         System.out.println("Rating: " + feedback.getRating());
         System.out.println("Comments: " + feedback.getComment());
         System.out.println("Date: " + feedback.getFeedbackDate());
+    }
+
+    private void printCategory(List<Menu> menuItems, int categoryId, String categoryName) {
+        System.out.printf("| %-104s |%n", categoryName);
+        System.out.println(
+                "-------------------------------------------------------------------------------------------------------");
+
+        menuItems.stream()
+                .filter(menuItem -> menuItem.getCategoryId() == categoryId)
+                .forEach(menuItem -> {
+                    System.out.printf("| %-5d | %-20s | %-10d | %-10.2f | %-15s |%n",
+                            menuItem.getMenuId(),
+                            menuItem.getName(),
+                            menuItem.getCategoryId(),
+                            menuItem.getPrice(),
+                            menuItem.isAvailability() ? "Available" : "Not Available");
+                });
+
+        System.out.println(
+                "-------------------------------------------------------------------------------------------------------");
     }
 }

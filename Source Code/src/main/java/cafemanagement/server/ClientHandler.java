@@ -86,28 +86,27 @@ public class ClientHandler implements Runnable {
             loggedInUser = null;
             writer.println("You have been logged out.");
         } else {
-        String command = inputLine.split(":")[0];
-        writer.println("command: " + command);
-        switch (loggedInRole) {
-            case "Employee":
-                EmployeeController employee = new EmployeeController(loggedInUser, notificationsQueue, writer, new BufferedReader(new InputStreamReader(clientSocket.getInputStream())));
-                employee.handleInput(command);
-                break;
-            case "Chef":
-                ChefController chef = new ChefController(loggedInUser, writer, new BufferedReader(new InputStreamReader(clientSocket.getInputStream())));
-                chef.handleInput(command);
-                break;
-            case "Admin":
-                AdminController admin = new AdminController(loggedInUser, writer, new BufferedReader(new InputStreamReader(clientSocket.getInputStream())));
-                admin.handleInput(command);
-                break;
-            default:
-                writer.println("ERROR: Invalid role.");
-                break;
+            String command = inputLine.split(":")[0];
+            writer.println("command: " + command);
+            switch (loggedInRole) {
+                case "Employee":
+                    EmployeeController employee = new EmployeeController(loggedInUser, notificationsQueue, writer, new BufferedReader(new InputStreamReader(clientSocket.getInputStream())));
+                    employee.handleInput(command);
+                    break;
+                case "Chef":
+                    ChefController chef = new ChefController(loggedInUser, writer, new BufferedReader(new InputStreamReader(clientSocket.getInputStream())));
+                    chef.handleInput(command);
+                    break;
+                case "Admin":
+                    AdminController admin = new AdminController(loggedInUser, writer, new BufferedReader(new InputStreamReader(clientSocket.getInputStream())));
+                    admin.handleInput(command);
+                    break;
+                default:
+                    writer.println("ERROR: Invalid role.");
+                    break;
+            }
         }
     }
-    }
-    
 
     private void handleLogin(int userId, String password, String roleName) {
         User user = userService.authenticate(userId, password, roleName);
