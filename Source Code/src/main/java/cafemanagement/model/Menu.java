@@ -5,6 +5,10 @@ public class Menu {
     private String name;
     private int categoryId;
     private float price;
+    private String cuisineType;
+    private String spiceLevel;
+    private boolean isSweet;
+    private String dietaryPreference;
     private boolean availability;
 
     public Menu() {
@@ -57,6 +61,38 @@ public class Menu {
         this.availability = availability;
     }
 
+    public String getSpiceLevel() {
+        return spiceLevel;
+    }
+
+    public void setSpiceLevel(String spiceLevel) {
+        this.spiceLevel = spiceLevel;
+    }
+
+    public String getCuisineType() {
+        return cuisineType;
+    }
+
+    public void setCuisineType(String cuisineType) {
+        this.cuisineType = cuisineType;
+    }
+
+    public boolean isSweet() {
+        return isSweet;
+    }
+
+    public void setSweet(boolean sweet) {
+        isSweet = sweet;
+    }
+
+    public String getDietaryPreference() {
+        return dietaryPreference;
+    }
+
+    public void setDietaryPreference(String dietaryPreference) {
+        this.dietaryPreference = dietaryPreference;
+    }
+    
     @Override
     public String toString() {
         return "Menu{" +

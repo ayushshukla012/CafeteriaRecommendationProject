@@ -9,7 +9,7 @@ import java.sql.*;
 
 public class MenuItemDAO {
     
-    // Breakfast = 1, Lunch = 2, Dinner = 3
+    // Breakfast = 1, Lunch = 2, Dinner = 3, Sweets = 6
     public List<String> getMenuItemsByCategory(int categoryId) {
         List<String> menuItems = new ArrayList<>();
         String query = "SELECT name FROM Menu WHERE categoryId = ?";
@@ -106,14 +106,14 @@ public class MenuItemDAO {
 
     public List<Menu> getMenuItemsDetailsByCategory(int categoryId) {
         List<Menu> menuItems = new ArrayList<>();
-        String query = "SELECT menuId, name, categoryId, price, availability FROM Menu WHERE categoryId = ?";
-
+        String query = "SELECT menuId, name, categoryId, price, availability, spiceLevel, cuisineType, isSweet, dietaryPreference FROM Menu WHERE categoryId = ?";
+    
         try (Connection connection = DatabaseUtil.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
-            
+    
             // Set the categoryId parameter in the prepared statement
             statement.setInt(1, categoryId);
-            
+    
             // Execute the query
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
@@ -123,7 +123,11 @@ public class MenuItemDAO {
                     menuItem.setCategoryId(resultSet.getInt("categoryId"));
                     menuItem.setPrice(resultSet.getFloat("price"));
                     menuItem.setAvailability(resultSet.getBoolean("availability"));
-                    
+                    menuItem.setSpiceLevel(resultSet.getString("spiceLevel"));
+                    menuItem.setCuisineType(resultSet.getString("cuisineType"));
+                    menuItem.setSweet(resultSet.getBoolean("isSweet"));
+                    menuItem.setDietaryPreference(resultSet.getString("dietaryPreference"));
+    
                     // Add menuItem to list
                     menuItems.add(menuItem);
                 }
@@ -131,7 +135,7 @@ public class MenuItemDAO {
         } catch (SQLException e) {
             e.printStackTrace(); // Handle properly in your application, e.g., logging
         }
-        
+    
         return menuItems;
     }
 
@@ -158,12 +162,12 @@ public class MenuItemDAO {
 
     public List<Menu> getAllMenuItems() {
         List<Menu> menuItems = new ArrayList<>();
-        String query = "SELECT menuId, name, categoryId, price, availability FROM Menu";
-
-        try (Connection connection =  DatabaseUtil.getConnection();
+        String query = "SELECT menuId, name, categoryId, price, availability, spiceLevel, cuisineType, isSweet, dietaryPreference FROM Menu";
+    
+        try (Connection connection = DatabaseUtil.getConnection();
              PreparedStatement statement = connection.prepareStatement(query);
              ResultSet resultSet = statement.executeQuery()) {
-
+    
             while (resultSet.next()) {
                 Menu menuItem = new Menu();
                 menuItem.setMenuId(resultSet.getInt("menuId"));
@@ -171,20 +175,24 @@ public class MenuItemDAO {
                 menuItem.setCategoryId(resultSet.getInt("categoryId"));
                 menuItem.setPrice(resultSet.getFloat("price"));
                 menuItem.setAvailability(resultSet.getBoolean("availability"));
-
+                menuItem.setSpiceLevel(resultSet.getString("spiceLevel"));
+                menuItem.setCuisineType(resultSet.getString("cuisineType"));
+                menuItem.setSweet(resultSet.getBoolean("isSweet"));
+                menuItem.setDietaryPreference(resultSet.getString("dietaryPreference"));
+    
                 menuItems.add(menuItem);
             }
-
+    
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
+    
         return menuItems;
     }
 
     public Menu getMenuItemById(int menuId) {
         Menu menuItem = null;
-        String query = "SELECT menuId, name, categoryId, price, availability FROM Menu WHERE menuId = ?";
+        String query = "SELECT menuId, name, categoryId, price, availability, spiceLevel, cuisineType, isSweet, dietaryPreference FROM Menu WHERE menuId = ?";
     
         try (Connection connection = DatabaseUtil.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
@@ -198,6 +206,10 @@ public class MenuItemDAO {
                     menuItem.setCategoryId(resultSet.getInt("categoryId"));
                     menuItem.setPrice(resultSet.getFloat("price"));
                     menuItem.setAvailability(resultSet.getBoolean("availability"));
+                    menuItem.setSpiceLevel(resultSet.getString("spiceLevel"));
+                    menuItem.setCuisineType(resultSet.getString("cuisineType"));
+                    menuItem.setSweet(resultSet.getBoolean("isSweet"));
+                    menuItem.setDietaryPreference(resultSet.getString("dietaryPreference"));
                 }
             }
     

@@ -65,7 +65,7 @@ public class ChefController {
         System.out.println("1. Send employee notifications");
         System.out.println("2. View menu");
         System.out.println("3. Generate feedback report");
-        System.out.println("4. Send dishes to review");
+        System.out.println("4. Select dishes for tomorrow");
         System.out.println("5. Get recommendation");
         System.out.println("6. Show discarded menu");
         System.out.println("7. Logout");
@@ -135,20 +135,22 @@ public class ChefController {
     private void viewMenu() {
         System.out.println("Viewing Menu With Feedback...");
         List<Menu> menuItems = menuItemService.getAllMenuItems();
-
+    
         if (menuItems.isEmpty()) {
             System.out.println("No menu items found.");
             return;
         }
-
+    
         System.out.println("Menu items:");
         System.out.println(
-                "-------------------------------------------------------------------------------------------------------");
-        System.out.printf("| %-5s | %-20s | %-10s | %-10s | %-15s |%n", "ID", "Name", "Category", "Price",
-                "Availability");
+                "----------------------------------------------------------------------------------------------------------------------------------" +
+                "--------------------------------------------------------------");
+        System.out.printf("| %-5s | %-20s | %-10s | %-10s | %-15s | %-12s | %-15s | %-6s | %-18s |%n", 
+                "ID", "Name", "Category", "Price", "Availability", "Spice Level", "Cuisine Type", "Sweet", "Dietary Preference");
         System.out.println(
-                "-------------------------------------------------------------------------------------------------------");
-
+                "----------------------------------------------------------------------------------------------------------------------------------" +
+                "--------------------------------------------------------------");
+    
         printCategory(menuItems, 1, "Breakfast");
         printCategory(menuItems, 2, "Lunch");
         printCategory(menuItems, 3, "Dinner");
@@ -236,11 +238,12 @@ public class ChefController {
                         for (String index : selectedIndices) {
                             int itemIndex = Integer.parseInt(index.trim()) - 1;
                             if (itemIndex >= 0 && itemIndex < recommendedItems.size()) {
-                                if (selectedItems.contains(itemIndex + 1)) {
+                                int menuId = (int) recommendedItems.get(itemIndex).get("menuId");
+                                if (selectedItems.contains(menuId)) {
                                     hasDuplicate = true;
                                     break;
                                 } else {
-                                    selectedItems.add(itemIndex + 1);
+                                    selectedItems.add(menuId);
                                 }
                             } else {
                                 throw new NumberFormatException("Index out of range");
@@ -257,14 +260,15 @@ public class ChefController {
                     }
 
                     System.out.println("Selected items:");
-                    for (int index : selectedItems) {
-                        Map<String, Object> menuItem = recommendedItems.get(index - 1);
-                        System.out.printf(
-                                "%-20s (ID: %d, Category ID: %d, Price: %.2f, Availability: %s, Avg Rating: %.2f, Sentiment: %s)%n",
-                                menuItem.get("name"), menuItem.get("menuId"), menuItem.get("categoryId"),
-                                menuItem.get("price"),
-                                (Boolean) menuItem.get("availability") ? "Available" : "Not Available",
-                                menuItem.get("averageRating"), menuItem.get("sentiment"));
+                    for (int menuId : selectedItems) {
+                        recommendedItems.stream()
+                                .filter(menuItem -> (int) menuItem.get("menuId") == menuId)
+                                .forEach(menuItem -> System.out.printf(
+                                        "%-20s (ID: %d, Category ID: %d, Price: %.2f, Availability: %s, Avg Rating: %.2f, Sentiment: %s)%n",
+                                        menuItem.get("name"), menuItem.get("menuId"), menuItem.get("categoryId"),
+                                        menuItem.get("price"),
+                                        (Boolean) menuItem.get("availability") ? "Available" : "Not Available",
+                                        menuItem.get("averageRating"), menuItem.get("sentiment")));
                     }
 
                     System.out.println("Do you confirm these items? (yes/no):");
@@ -489,22 +493,28 @@ public class ChefController {
     }
 
     private void printCategory(List<Menu> menuItems, int categoryId, String categoryName) {
-        System.out.printf("| %-104s |%n", categoryName);
+        System.out.printf("| %-134s |%n", categoryName);
         System.out.println(
-                "-------------------------------------------------------------------------------------------------------");
-
+                "----------------------------------------------------------------------------------------------------------------------------------" +
+                "--------------------------------------------------------------");
+    
         menuItems.stream()
                 .filter(menuItem -> menuItem.getCategoryId() == categoryId)
                 .forEach(menuItem -> {
-                    System.out.printf("| %-5d | %-20s | %-10d | %-10.2f | %-15s |%n",
+                    System.out.printf("| %-5d | %-20s | %-10d | %-10.2f | %-15s | %-12s | %-15s | %-6s | %-18s |%n",
                             menuItem.getMenuId(),
                             menuItem.getName(),
                             menuItem.getCategoryId(),
                             menuItem.getPrice(),
-                            menuItem.isAvailability() ? "Available" : "Not Available");
+                            menuItem.isAvailability() ? "Available" : "Not Available",
+                            menuItem.getSpiceLevel(),
+                            menuItem.getCuisineType(),
+                            menuItem.isSweet() ? "Yes" : "No",
+                            menuItem.getDietaryPreference());
                 });
-
+    
         System.out.println(
-                "-------------------------------------------------------------------------------------------------------");
+                "----------------------------------------------------------------------------------------------------------------------------------" +
+                "--------------------------------------------------------------");
     }
 }

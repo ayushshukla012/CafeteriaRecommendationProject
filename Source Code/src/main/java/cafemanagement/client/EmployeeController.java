@@ -5,16 +5,24 @@ import cafemanagement.service.FeedbackService;
 import cafemanagement.service.MenuItemService;
 import cafemanagement.service.NotificationService;
 import cafemanagement.service.PollService;
+import cafemanagement.service.UserPreferencesService;
 import cafemanagement.model.Notification;
 import cafemanagement.model.PollItem;
+import cafemanagement.dao.UserPreferencesDAO;
 import cafemanagement.model.Feedback;
 import cafemanagement.model.Menu;
+import cafemanagement.model.UserPreferences;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
+import java.util.stream.Collectors;
 
 public class EmployeeController {
     private User currentUser;
@@ -25,6 +33,7 @@ public class EmployeeController {
     private PollService pollService;
     private MenuItemService menuItemService;
     private FeedbackService feedbackService;
+    private UserPreferencesService userPreferencesService;
 
     public EmployeeController(User currentUser, Queue<String> notificationsQueue, PrintWriter writer, BufferedReader userInput) {
         this.currentUser = currentUser;
@@ -35,6 +44,7 @@ public class EmployeeController {
         this.pollService = new PollService();
         this.menuItemService = new MenuItemService();
         this.feedbackService = new FeedbackService();
+        this.userPreferencesService = new UserPreferencesService();
     }
 
     public void start() {
@@ -53,10 +63,11 @@ public class EmployeeController {
     private void displayMenu() {
         System.out.println("Employee Menu:");
         System.out.println("1. See notifications");
-        System.out.println("2. Provide Feedback");
-        System.out.println("3. Select Meal for tomorrow");
-        System.out.println("4. See Menu");
-        System.out.println("5. Logout");
+        System.out.println("2. Provide feedback");
+        System.out.println("3. Select meal for tomorrow");
+        System.out.println("4. See menu");
+        System.out.println("5. Update your profile");
+        System.out.println("6. Logout");
     }
 
     public void handleInput(String input) {
@@ -74,6 +85,9 @@ public class EmployeeController {
                 viewMenu();
                 break;
             case "5":
+                updateProfile();
+                break;
+            case "6":
                 logout();
                 return;
             default:
@@ -188,18 +202,25 @@ public class EmployeeController {
         }
     
         int employeeId = getUserIdByCurrentUser(currentUser);
+        UserPreferences userPreferences = userPreferencesService.getPreferencesByEmployeeId(employeeId);
+        pollItems = sortPollItems(pollItems, userPreferences);
+        
         int pollId = pollItems.get(0).getPollId();
-    
         if (pollService.hasVotedToday(pollId, employeeId)) {
             System.out.println("Employee has already voted for today's poll.");
             return;
         }
     
         System.out.println("Select one meal for tomorrow:");
+        List<Menu> sortedMenuItems = new ArrayList<>();
         for (int i = 0; i < pollItems.size(); i++) {
             PollItem item = pollItems.get(i);
-            System.out.println((i + 1) + ". " + item.getItemName() + " (Menu Item ID: " + item.getMenuItemId() + ")");
+            Menu menuItem = menuItemService.getMenuItemById(item.getMenuItemId());
+            sortedMenuItems.add(menuItem);
+            System.out.println((i + 1) + ". " + menuItem.getName() + " (Menu Item ID: " + item.getMenuItemId() + ")");
         }
+
+        displaySuggestion(userPreferences, sortedMenuItems);
     
         try {
             int selectedIndex = readIntegerInput();
@@ -298,22 +319,281 @@ public class EmployeeController {
     }
 
     private void printCategory(List<Menu> menuItems, int categoryId, String categoryName) {
-        System.out.printf("| %-104s |%n", categoryName);
+        System.out.printf("| %-134s |%n", categoryName);
         System.out.println(
-                "-------------------------------------------------------------------------------------------------------");
-
+                "----------------------------------------------------------------------------------------------------------------------------------" +
+                "--------------------------------------------------------------");
+    
         menuItems.stream()
                 .filter(menuItem -> menuItem.getCategoryId() == categoryId)
                 .forEach(menuItem -> {
-                    System.out.printf("| %-5d | %-20s | %-10d | %-10.2f | %-15s |%n",
+                    System.out.printf("| %-5d | %-20s | %-10d | %-10.2f | %-10s | %-15s | %-10s | %-10s | %-15s |%n",
                             menuItem.getMenuId(),
                             menuItem.getName(),
                             menuItem.getCategoryId(),
                             menuItem.getPrice(),
-                            menuItem.isAvailability() ? "Available" : "Not Available");
+                            menuItem.isAvailability() ? "Available" : "Not Available",
+                            menuItem.getSpiceLevel(),
+                            menuItem.getCuisineType(),
+                            menuItem.isSweet() ? "Yes" : "No",
+                            menuItem.getDietaryPreference());
                 });
-
+    
         System.out.println(
-                "-------------------------------------------------------------------------------------------------------");
+                "----------------------------------------------------------------------------------------------------------------------------------" +
+                "--------------------------------------------------------------");
     }
+
+    private List<PollItem> sortPollItems(List<PollItem> pollItems, UserPreferences userPreferences) {
+    return pollItems.stream()
+            .map(pollItem -> {
+                Menu menuItem = menuItemService.getMenuItemById(pollItem.getMenuItemId());
+                pollItem.setMenuItem(menuItem);
+                return pollItem;
+            })
+            .sorted((item1, item2) -> {
+                Menu menuItem1 = item1.getMenuItem();
+                Menu menuItem2 = item2.getMenuItem();
+
+                // Sort by dietary preference first
+                int dietaryComparison = menuItem1.getDietaryPreference().compareTo(userPreferences.getDietaryPreference());
+                if (dietaryComparison != 0) {
+                    return dietaryComparison;
+                }
+
+                // Additional sorting criteria can be added here
+                return menuItem1.getName().compareTo(menuItem2.getName());
+            })
+            .collect(Collectors.toList());
+    }
+
+    private void displaySuggestion(UserPreferences userPreferences, List<Menu> sortedMenuItems) {
+        boolean suggestionMade = false;
+    
+        for (Menu menuItem : sortedMenuItems) {
+            // Suggest based on spice level
+            if (menuItem.getSpiceLevel().equals(userPreferences.getSpiceLevel())) {
+                System.out.println("Because you like " + userPreferences.getSpiceLevel() + " spice level, you can go with " + menuItem.getName() + ".");
+                suggestionMade = true;
+                break;
+            }
+        }
+    
+        if (!suggestionMade) {
+            for (Menu menuItem : sortedMenuItems) {
+                // Suggest based on dietary preference
+                if (menuItem.getDietaryPreference().equals(userPreferences.getDietaryPreference())) {
+                    System.out.println("Because you prefer " + userPreferences.getDietaryPreference() + " food, you can go with " + menuItem.getName() + ".");
+                    suggestionMade = true;
+                    break;
+                }
+            }
+        }
+    
+        if (!suggestionMade) {
+            for (Menu menuItem : sortedMenuItems) {
+                // Suggest based on preferred cuisine
+                if (menuItem.getCuisineType().equals(userPreferences.getPreferredCuisine())) {
+                    System.out.println("Because you like " + userPreferences.getPreferredCuisine() + " cuisine, you can go with " + menuItem.getName() + ".");
+                    suggestionMade = true;
+                    break;
+                }
+            }
+        }
+    
+        if (!suggestionMade && userPreferences.isSweetTooth()) {
+            for (Menu menuItem : sortedMenuItems) {
+                // Suggest based on sweet tooth
+                if (menuItem.isSweet()) {
+                    System.out.println("Since you have a sweet tooth, you might like " + menuItem.getName() + ".");
+                    suggestionMade = true;
+                    break;
+                }
+            }
+        }
+    
+        if (!suggestionMade) {
+            // Default suggestion if no specific match found
+            System.out.println("Based on your preferences, you can choose any of the available options.");
+        }
+    }
+
+    private void updateProfile() {
+        try {
+            System.out.println("Updating your Profile...");
+            int employeeId = getUserIdByCurrentUser(currentUser);
+            UserPreferences preferences = userPreferencesService.getPreferencesByEmployeeId(employeeId);
+    
+            boolean isNewProfile = false;
+            if (preferences == null) {
+                isNewProfile = true;
+                preferences = new UserPreferences();
+                preferences.setEmployeeId(currentUser.getUserId());
+            }
+    
+            // Display current preferences if they exist
+            if (!isNewProfile) {
+                System.out.println("Your current preferences:");
+                System.out.printf("Dietary Preference: %s%n", preferences.getDietaryPreference());
+                System.out.printf("Spice Level: %s%n", preferences.getSpiceLevel());
+                System.out.printf("Preferred Cuisine: %s%n", preferences.getPreferredCuisine());
+                System.out.printf("Sweet Tooth: %s%n", preferences.isSweetTooth() ? "Yes" : "No");
+            }
+    
+            // Update profile questions
+            System.out.println("Please answer these questions to update your preferences:");
+    
+            // Question 1: Dietary Preference
+            System.out.println("1) Please select one-");
+            System.out.println("   1. Vegetarian");
+            System.out.println("   2. Non Vegetarian");
+            System.out.println("   3. Eggetarian");
+            System.out.println("   4. Skip (if you do not want to update)");
+            int option = readIntegerInputInRange(1, 4);
+            switch (option) {
+                case 1:
+                    preferences.setDietaryPreference("Vegetarian");
+                    break;
+                case 2:
+                    preferences.setDietaryPreference("Non Vegetarian");
+                    break;
+                case 3:
+                    preferences.setDietaryPreference("Eggetarian");
+                    break;
+                case 4:
+                    // Skip updating dietary preference
+                    break;
+                default:
+                    System.out.println("Invalid input. Updating with default value (Vegetarian).");
+                    preferences.setDietaryPreference("Vegetarian");
+                    break;
+            }
+    
+            // Question 2: Spice Level
+            System.out.println("2) Please select your spice level");
+            System.out.println("   1. High");
+            System.out.println("   2. Medium");
+            System.out.println("   3. Low");
+            System.out.println("   4. Skip (if you do not want to update)");
+            option = readIntegerInputInRange(1, 4);
+            switch (option) {
+                case 1:
+                    preferences.setSpiceLevel("High");
+                    break;
+                case 2:
+                    preferences.setSpiceLevel("Medium");
+                    break;
+                case 3:
+                    preferences.setSpiceLevel("Low");
+                    break;
+                case 4:
+                    // Skip updating spice level
+                    break;
+                default:
+                    System.out.println("Invalid input. Updating with default value (Medium).");
+                    preferences.setSpiceLevel("Medium");
+                    break;
+            }
+    
+            // Question 3: Preferred Cuisine
+            System.out.println("3) What do you prefer most?");
+            System.out.println("   1. North Indian");
+            System.out.println("   2. South Indian");
+            System.out.println("   3. Chinese");
+            System.out.println("   4. Italian");
+            System.out.println("   5. Mexican");
+            System.out.println("   6. Other");
+            System.out.println("   7. Skip (if you do not want to update)");
+            option = readIntegerInputInRange(1, 7);
+            switch (option) {
+                case 1:
+                    preferences.setPreferredCuisine("North Indian");
+                    break;
+                case 2:
+                    preferences.setPreferredCuisine("South Indian");
+                    break;
+                case 3:
+                    preferences.setPreferredCuisine("Chinese");
+                    break;
+                case 4:
+                    preferences.setPreferredCuisine("Italian");
+                    break;
+                case 5:
+                    preferences.setPreferredCuisine("Mexican");
+                    break;
+                case 6:
+                    preferences.setPreferredCuisine("Other");
+                    break;
+                case 7:
+                    // Skip updating preferred cuisine
+                    break;
+                default:
+                    System.out.println("Invalid input. Updating with default value (Other).");
+                    preferences.setPreferredCuisine("Other");
+                    break;
+            }
+    
+            // Question 4: Sweet Tooth
+            System.out.println("4) Do you have a sweet tooth?");
+            System.out.println("   1. Yes");
+            System.out.println("   2. No");
+            System.out.println("   3. Skip (if you do not want to update)");
+            option = readIntegerInputInRange(1, 3);
+            switch (option) {
+                case 1:
+                    preferences.setSweetTooth(true);
+                    break;
+                case 2:
+                    preferences.setSweetTooth(false);
+                    break;
+                case 3:
+                    // Skip updating sweet tooth preference
+                    break;
+                default:
+                    System.out.println("Invalid input. Updating with default value (No sweet tooth).");
+                    preferences.setSweetTooth(false);
+                    break;
+            }
+    
+            // Update or insert the preferences
+            if (isNewProfile) {
+                try {
+                    userPreferencesService.insertUserPreferences(preferences);
+                    System.out.println("New profile created successfully.");
+                } catch (SQLException e) {
+                    System.err.println("Error inserting user preferences: " + e.getMessage());
+                }
+            } else {
+                userPreferencesService.updateUserPreferences(preferences);
+                System.out.println("Profile updated successfully.");
+            }
+    
+        } catch (IOException e) {
+            System.err.println("Error updating profile: " + e.getMessage());
+        }
+    }
+    
+    private int readIntegerInputInRange(int min, int max) throws IOException {
+        BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
+        int input;
+        while (true) {
+            try {
+                String inputStr = userInput.readLine().trim();
+                if (inputStr.isEmpty()) {
+                    System.out.println("Please provide a valid input.");
+                    continue;
+                }
+                input = Integer.parseInt(inputStr);
+                if (input >= min && input <= max) {
+                    break;
+                } else {
+                    System.out.println("Input out of range. Please enter a number between " + min + " and " + max + ".");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid input. Please enter a number.");
+            }
+        }
+        return input;
+    }    
+
 }
