@@ -1,37 +1,37 @@
 plugins {
-    java
-    application
+    id("java")
 }
 
-repositories {
-    mavenCentral()
+allprojects {
+    group = "com.cafeteriamanagement"
+    version = "1.0-SNAPSHOT"
+
+    repositories {
+        mavenCentral()
+    }
 }
 
-dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-web:2.6.4") 
-    implementation("mysql:mysql-connector-java:8.0.29")
-    testImplementation("org.junit.jupiter:junit-jupiter:5.9.3")
+subprojects {
+    apply(plugin = "java")
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.1")
+        testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.1")
+    }
+
+    tasks {
+        test {
+            useJUnitPlatform()
+        }
+    }
+
+    java {
+        toolchain {
+            languageVersion.set(JavaLanguageVersion.of(17))
+        }
+    }
 }
-
-application {
-    mainClass.set("cafemanagement.MainApplication")
-}
-
-tasks.named<JavaExec>("run") {
-    standardInput = System.`in`
-    args = listOf()
-}
-
-tasks.named<Test>("test") {
-    // Use JUnit Platform for unit tests.
-    useJUnitPlatform()
-}
-
-
-/* 
-To run
--- gradle --console plain run
--- gradle build
--- gradle run
--- gradle run --args=""
-*/
