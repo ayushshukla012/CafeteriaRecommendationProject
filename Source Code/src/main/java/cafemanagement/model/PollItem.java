@@ -5,6 +5,7 @@ public class PollItem {
     private int pollId;
     private int menuItemId;
     private String itemName;
+    private Menu menuItem;
 
     public PollItem(int pollItemId, int pollId, int menuItemId, String itemName) {
         this.pollItemId = pollItemId;
@@ -28,6 +29,15 @@ public class PollItem {
     public String getItemName() {
         return itemName;
     }
+
+    public Menu getMenuItem() {
+        return menuItem;
+    }
+
+    public void setMenuItem(Menu menuItem) {
+        this.menuItem = menuItem;
+    }
+    
 
     // Optionally, you may override toString() for debugging or logging purposes
     @Override

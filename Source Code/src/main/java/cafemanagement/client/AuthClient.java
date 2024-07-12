@@ -40,13 +40,13 @@ public class AuthClient {
                    receiveNotifications();
                     switch (roleName) {
                         case "1":
-                            new Employee(loggedInUser, notificationsQueue, writer, userInput).start();
+                            new EmployeeController(loggedInUser, notificationsQueue, writer, userInput).start();
                             break;
                         case "2":
-                            new Chef(loggedInUser, writer, userInput).start();
+                            new ChefController(loggedInUser, writer, userInput).start();
                             break;
                         case "3":
-                            new Admin(loggedInUser, writer, userInput).start();
+                            new AdminController(loggedInUser, writer, userInput).start();
                             break;
                     }
                 }

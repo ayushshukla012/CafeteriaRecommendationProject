@@ -1,9 +1,8 @@
 package cafemanagement.server;
 
-import cafemanagement.authentication.AuthService;
-import cafemanagement.client.Admin;
-import cafemanagement.client.Chef;
-import cafemanagement.client.Employee;
+import cafemanagement.client.AdminController;
+import cafemanagement.client.ChefController;
+import cafemanagement.client.EmployeeController;
 import cafemanagement.model.User;
 import cafemanagement.service.UserService;
 import cafemanagement.service.PollService;
@@ -87,28 +86,27 @@ public class ClientHandler implements Runnable {
             loggedInUser = null;
             writer.println("You have been logged out.");
         } else {
-        String command = inputLine.split(":")[0];
-        writer.println("command: " + command);
-        switch (loggedInRole) {
-            case "Employee":
-                Employee employee = new Employee(loggedInUser, notificationsQueue, writer, new BufferedReader(new InputStreamReader(clientSocket.getInputStream())));
-                employee.handleInput(command);
-                break;
-            case "Chef":
-                Chef chef = new Chef(loggedInUser, writer, new BufferedReader(new InputStreamReader(clientSocket.getInputStream())));
-                chef.handleInput(command);
-                break;
-            case "Admin":
-                Admin admin = new Admin(loggedInUser, writer, new BufferedReader(new InputStreamReader(clientSocket.getInputStream())));
-                admin.handleInput(command);
-                break;
-            default:
-                writer.println("ERROR: Invalid role.");
-                break;
+            String command = inputLine.split(":")[0];
+            writer.println("command: " + command);
+            switch (loggedInRole) {
+                case "Employee":
+                    EmployeeController employee = new EmployeeController(loggedInUser, notificationsQueue, writer, new BufferedReader(new InputStreamReader(clientSocket.getInputStream())));
+                    employee.handleInput(command);
+                    break;
+                case "Chef":
+                    ChefController chef = new ChefController(loggedInUser, writer, new BufferedReader(new InputStreamReader(clientSocket.getInputStream())));
+                    chef.handleInput(command);
+                    break;
+                case "Admin":
+                    AdminController admin = new AdminController(loggedInUser, writer, new BufferedReader(new InputStreamReader(clientSocket.getInputStream())));
+                    admin.handleInput(command);
+                    break;
+                default:
+                    writer.println("ERROR: Invalid role.");
+                    break;
+            }
         }
     }
-    }
-    
 
     private void handleLogin(int userId, String password, String roleName) {
         User user = userService.authenticate(userId, password, roleName);
@@ -119,8 +117,10 @@ public class ClientHandler implements Runnable {
             System.out.println("User " + loggedInUser.getName() + " has logged in.");
             String currentDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
             writer.println("SUCCESS: Login successful.  Welcome " + user.getName() + "! " + currentDate);
+            userService.logUserAttempt(userId, "success");
         } else {
             writer.println("ERROR: Invalid credentials or role. Please try again.");
+            userService.logUserAttempt(userId, "failure");
         }
     }
 }
