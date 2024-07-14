@@ -4,7 +4,7 @@ plugins {
 
 allprojects {
     group = "com.cafeteriamanagement"
-    version = "1.0-SNAPSHOT"
+    version = "1.0"
 
     repositories {
         mavenCentral()
@@ -19,6 +19,7 @@ subprojects {
     }
 
     dependencies {
+        implementation("mysql:mysql-connector-java:8.0.29")
         testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.1")
         testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.1")
     }

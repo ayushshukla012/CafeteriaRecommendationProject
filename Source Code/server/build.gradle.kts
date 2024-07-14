@@ -8,12 +8,12 @@ repositories {
 }
 
 application {
-    mainClass.set("com.cafeteriamanagement.HelloServer")
+    mainClass.set("com.cafeteriamanagement.controller.AuthServer")
 }
 
 dependencies {
     implementation(project(":common"))
-
+    implementation("mysql:mysql-connector-java:8.0.29")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.1")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.1")
 }

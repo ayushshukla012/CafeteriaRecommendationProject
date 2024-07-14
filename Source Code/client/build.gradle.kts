@@ -8,7 +8,7 @@ repositories {
 }
 
 application {
-    mainClass.set("com.cafeteriamanagement.HelloClient") // Specify the fully qualified name of your main class
+    mainClass.set("com.cafeteriamanagement.client.AuthClient")
 }
 
 dependencies {
