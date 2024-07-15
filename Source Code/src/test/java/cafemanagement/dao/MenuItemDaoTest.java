@@ -55,34 +55,48 @@ public class MenuItemDaoTest {
     @Test
     public void testStoreMenuItem() throws SQLException {
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
-
-        boolean stored = menuItemDAO.storeMenuItem("Item1", 1, 10.5f, true);
-
+        
+        when(mockStatement.executeUpdate()).thenReturn(1);
+        
+        boolean stored = menuItemDAO.storeMenuItem("Item1", 1, 10.5f, true, "Medium", "Italian", true, "Vegetarian");
+    
         verify(mockConnection).prepareStatement(anyString());
         verify(mockStatement).setString(1, "Item1");
         verify(mockStatement).setInt(2, 1);
         verify(mockStatement).setFloat(3, 10.5f);
         verify(mockStatement).setBoolean(4, true);
+        verify(mockStatement).setString(5, "Medium");
+        verify(mockStatement).setString(6, "Italian");
+        verify(mockStatement).setBoolean(7, true);
+        verify(mockStatement).setString(8, "Vegetarian");
         verify(mockStatement).executeUpdate();
-
+    
         assertTrue(stored);
     }
+    
 
     @Test
     public void testUpdateMenuInDatabase() throws SQLException {
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
+        
         when(mockStatement.executeUpdate()).thenReturn(1);
-
-        boolean updated = menuItemDAO.updateMenuInDatabase("Item1", "NewName", 12.5f);
-
+        
+        boolean updated = menuItemDAO.updateMenuInDatabase(1, "Item1", 12.5f, true, "Medium", "Italian", true, "Vegetarian");
+    
         verify(mockConnection).prepareStatement(anyString());
-        verify(mockStatement).setString(1, "NewName");
+        verify(mockStatement).setString(1, "Item1");
         verify(mockStatement).setFloat(2, 12.5f);
-        verify(mockStatement).setString(3, "Item1");
+        verify(mockStatement).setBoolean(3, true);
+        verify(mockStatement).setString(4, "Medium");
+        verify(mockStatement).setString(5, "Italian");
+        verify(mockStatement).setBoolean(6, true);
+        verify(mockStatement).setString(7, "Vegetarian");
+        verify(mockStatement).setInt(8, 1);
         verify(mockStatement).executeUpdate();
-
+    
         assertTrue(updated);
     }
+    
 
     @Test
     public void testDeleteMenuItem() throws SQLException {

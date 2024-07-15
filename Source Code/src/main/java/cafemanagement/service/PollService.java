@@ -5,6 +5,7 @@ import cafemanagement.model.PollItem;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 public class PollService {
     private final PollDAO pollDAO;
@@ -35,5 +36,9 @@ public class PollService {
 
     public void clearVotingResults() {
         pollDAO.clearVotingResults();
+    }
+
+    public Map<Integer, Integer> getVotesForLatestPoll() {
+        return pollDAO.getVotesForLatestPoll();
     }
 }

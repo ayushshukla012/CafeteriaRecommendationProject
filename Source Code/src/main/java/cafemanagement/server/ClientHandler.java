@@ -9,6 +9,7 @@ import cafemanagement.service.PollService;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Queue;
@@ -48,6 +49,12 @@ public class ClientHandler implements Runnable {
                 } else {
                     handleUserInput(inputLine);
                 }
+            }
+        } catch (SocketException e) {
+            if ("Connection reset".equals(e.getMessage())) {
+                System.err.println("Client disconnected: " + e.getMessage());
+            } else {
+                System.err.println("Socket error: " + e.getMessage());
             }
         } catch (IOException e) {
             System.err.println("Error handling client: " + e.getMessage());

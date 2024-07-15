@@ -3,7 +3,8 @@ package cafemanagement.client;
 import cafemanagement.model.User;
 
 import java.io.*;
-import java.net.*;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -17,6 +18,10 @@ public class AuthClient {
     private static Queue<String> notificationsQueue = new ConcurrentLinkedQueue<>();
 
     public static void main(String[] args) {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("\nClient shutting down...");
+        }));
+
         try (
             Socket socket = new Socket(SERVER_IP, SERVER_PORT);
             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -37,7 +42,7 @@ public class AuthClient {
                 }
 
                 if (login(writer, userInput)) {
-                   receiveNotifications();
+                    receiveNotifications();
                     switch (roleName) {
                         case "1":
                             new EmployeeController(loggedInUser, notificationsQueue, writer, userInput).start();
@@ -51,8 +56,10 @@ public class AuthClient {
                     }
                 }
             }
+        } catch (UnknownHostException e) {
+            System.err.println("Server not found: " + e.getMessage());
         } catch (IOException e) {
-            System.err.println("Client exception: " + e.getMessage());
+            System.err.println("Couldn't connect to the server: " + e.getMessage());
         }
     }
 
@@ -110,12 +117,14 @@ public class AuthClient {
         }
     }
 
-    
     private static void receiveNotifications() {
         Thread notificationThread = new Thread(() -> {
             try {
                 while (true) {
                     String notification = serverReader.readLine();
+                    if (notification == null) {
+                        break;
+                    }
                     if (notification.startsWith("NOTIFICATION:")) {
                         notificationsQueue.offer(notification.substring(14));
                         System.out.println("New notification: " + notification.substring(14));
@@ -129,5 +138,4 @@ public class AuthClient {
         });
         notificationThread.start();
     }
-        
 }

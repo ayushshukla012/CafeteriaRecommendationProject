@@ -31,4 +31,8 @@ public class FeedbackService {
     public Feedback getFeedbackById(int feedbackId) {
         return getFeedbackById(feedbackId);
     }
+
+    public void saveFeedback(int notificationId, int employeeId, String question, String response) {
+        feedbackDAO.saveFeedback(notificationId, employeeId, question, response);
+    }
 }

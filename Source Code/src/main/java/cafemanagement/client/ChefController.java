@@ -66,9 +66,10 @@ public class ChefController {
         System.out.println("2. View menu");
         System.out.println("3. Generate feedback report");
         System.out.println("4. Select dishes for tomorrow");
-        System.out.println("5. Get recommendation");
-        System.out.println("6. Show discarded menu");
-        System.out.println("7. Logout");
+        System.out.println("5. See user input to select for tomorrow.");
+        System.out.println("6. Get recommendation");
+        System.out.println("7. Show discarded menu");
+        System.out.println("8. Logout");
     }
 
     public void handleInput(String input) {
@@ -87,12 +88,15 @@ public class ChefController {
                     sendDishesToReview(); // Add recommendation engine
                     break;
                 case "5":
-                    getRecommendation(); // Get sentiment for a feedback
+                    userInputOnDishesToReview(); // Get sentiment for a feedback
                     break;
                 case "6":
-                    getDiscardedMenu();
+                    getRecommendation(); // Get sentiment for a feedback
                     break;
                 case "7":
+                    getDiscardedMenu();
+                    break;
+                case "8":
                     logout();
                     return;
                 default:
@@ -408,21 +412,40 @@ public class ChefController {
             System.out.println("\nRolling out detailed feedback questions...");
             System.out.print("Enter the food item ID to gather feedback for: ");
             int menuItemId = Integer.parseInt(userInput.readLine().trim());
-
+    
             Menu menuItem = menuItemService.getMenuItemById(menuItemId);
             if (menuItem == null) {
                 System.out.println("Food item not found in the menu.");
                 return;
             }
-
+    
             String itemName = menuItem.getName();
-            String question1 = "Q1. What didn't you like about " + itemName + "?";
-            String question2 = "Q2. How would you like " + itemName + " to taste?";
-            String question3 = "Q3. Share your mom's recipe.";
-
-            String message = "We are trying to improve your experience with " + itemName + ". Please provide your feedback and help us.\n"
-                    + question1 + "\n" + question2 + "\n" + question3;
-
+    
+            System.out.println("Here are some example questions you might ask:");
+            System.out.println("1. What didn't you like about " + itemName + "?");
+            System.out.println("2. How would you like " + itemName + " to taste?");
+            System.out.println("3. Share your mom's recipe.");
+    
+            String[] questions = new String[3];
+            for (int i = 0; i < 3; i++) {
+                System.out.print("Enter question " + (i + 1) + " (or press Enter to skip): ");
+                String question = userInput.readLine().trim();
+                if (question.isEmpty()) {
+                    break;
+                }
+                questions[i] = question;
+            }
+    
+            StringBuilder messageBuilder = new StringBuilder();
+            messageBuilder.append("We are trying to improve your experience with ").append(itemName).append(". Please provide your feedback and help us.\n");
+    
+            for (int i = 0; i < questions.length; i++) {
+                if (questions[i] != null) {
+                    messageBuilder.append("Q").append(i + 1).append(". ").append(questions[i]).append("\n");
+                }
+            }
+    
+            String message = messageBuilder.toString();
             sendNotification(message, "FeedbackRequest", menuItemId);
         } catch (NumberFormatException e) {
             System.err.println("Invalid input. Please enter a valid menu item ID.");
@@ -430,6 +453,7 @@ public class ChefController {
             System.err.println("Error gathering detailed feedback: " + e);
         }
     }
+    
 
     protected void logout() {
         try {
@@ -453,7 +477,7 @@ public class ChefController {
         } catch (Exception e) {
             System.err.println("Unable to fetch employee ids.");
         }
-        return null;
+        return new ArrayList<>();
     }
 
     private int readIntegerInput() throws IOException {
@@ -517,4 +541,32 @@ public class ChefController {
                 "----------------------------------------------------------------------------------------------------------------------------------" +
                 "--------------------------------------------------------------");
     }
+
+    public void userInputOnDishesToReview() {
+        Map<Integer, Integer> votesMap = pollService.getVotesForLatestPoll();
+    
+        if (votesMap.isEmpty()) {
+            System.out.println("No votes found for the latest poll.");
+            return;
+        }
+    
+        List<Menu> menuItems = menuItemService.getAllMenuItems();
+        Map<Integer, String> menuItemMap = menuItems.stream()
+                .collect(Collectors.toMap(Menu::getMenuId, Menu::getName));
+    
+        System.out.println("User Input on Dishes to Review:");
+        System.out.println("------------------------------------------------");
+        System.out.printf("| %-20s | %-10s |%n", "Menu Item", "Vote Count");
+        System.out.println("------------------------------------------------");
+    
+        for (Map.Entry<Integer, Integer> entry : votesMap.entrySet()) {
+            String menuItemName = menuItemMap.getOrDefault(entry.getKey(), "Unknown");
+            System.out.printf("| %-20s | %-10d |%n", menuItemName, entry.getValue());
+        }
+    
+        System.out.println("------------------------------------------------");
+    }
+    
+
+
 }

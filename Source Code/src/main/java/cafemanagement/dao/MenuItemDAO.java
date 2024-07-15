@@ -31,15 +31,19 @@ public class MenuItemDAO {
         return menuItems;
     }
 
-    public boolean storeMenuItem(String itemName, int categoryId, float itemPrice, boolean availability) {
-        String sql = "INSERT INTO Menu (name, categoryId, price, availability) VALUES (?, ?, ?, ?)";
+    public boolean storeMenuItem(String itemName, int categoryId, float itemPrice, boolean availability, String spiceLevel, String cuisineType, boolean isSweet, String dietaryPreference) {
+        String sql = "INSERT INTO Menu (name, categoryId, price, availability, spiceLevel, cuisineType, isSweet, dietaryPreference) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     
         try (Connection conn = DatabaseUtil.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, itemName);
             stmt.setInt(2, categoryId);
             stmt.setFloat(3, itemPrice);
             stmt.setBoolean(4, availability);
+            stmt.setString(5, spiceLevel);
+            stmt.setString(6, cuisineType);
+            stmt.setBoolean(7, isSweet);
+            stmt.setString(8, dietaryPreference);
             stmt.executeUpdate();
             System.out.println("Menu item added: " + itemName + " - " + itemPrice);
             return true;
@@ -49,15 +53,20 @@ public class MenuItemDAO {
         }
     }
 
-    public boolean updateMenuInDatabase(String itemName, String newItemName, float newItemPrice) {
-        String updateQuery = "UPDATE Menu SET name = ?, price = ? WHERE name = ?";
+    public boolean updateMenuInDatabase(int menuId, String newName, float newPrice, boolean newAvailability, String newSpiceLevel, String newCuisineType, boolean newIsSweet, String newDietaryPreference) {
+        String updateQuery = "UPDATE Menu SET name = ?, price = ?, availability = ?, spiceLevel = ?, cuisineType = ?, isSweet = ?, dietaryPreference = ? WHERE menuId = ?";
         
         try (Connection connection = DatabaseUtil.getConnection();
              PreparedStatement statement = connection.prepareStatement(updateQuery)) {
             
-            statement.setString(1, newItemName);
-            statement.setFloat(2, newItemPrice);
-            statement.setString(3, itemName);
+            statement.setString(1, newName);
+            statement.setFloat(2, newPrice);
+            statement.setBoolean(3, newAvailability);
+            statement.setString(4, newSpiceLevel);
+            statement.setString(5, newCuisineType);
+            statement.setBoolean(6, newIsSweet);
+            statement.setString(7, newDietaryPreference);
+            statement.setInt(8, menuId);
             
             int rowsUpdated = statement.executeUpdate();
             return rowsUpdated > 0;
@@ -218,6 +227,36 @@ public class MenuItemDAO {
         }
     
         return menuItem;
+    }
+
+    public int getMenuIdByName(String name) {
+        String query = "SELECT menuId FROM Menu WHERE name = ?";
+        try (Connection connection = DatabaseUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, name);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return resultSet.getInt("menuId");
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching menuId by name: " + e.getMessage());
+        }
+        return -1; // Indicate that the menu item was not found
+    }
+
+    public List<String> getAllMenuNames() {
+        List<String> menuNames = new ArrayList<>();
+        String query = "SELECT name FROM Menu";
+        try (Connection connection = DatabaseUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query);
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                menuNames.add(resultSet.getString("name").toLowerCase());
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching all menu names: " + e.getMessage());
+        }
+        return menuNames;
     }
 
 

@@ -6,7 +6,9 @@ import cafemanagement.utils.DatabaseUtil;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class PollDAO {
 
@@ -137,5 +139,39 @@ public class PollDAO {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    public Map<Integer, Integer> getVotesForLatestPoll() {
+        Map<Integer, Integer> votesMap = new HashMap<>();
+        String latestPollQuery = "SELECT pollId FROM Polls ORDER BY pollDate DESC LIMIT 1";
+        String pollItemsQuery = "SELECT pi.menuItemId, COUNT(v.voteId) AS voteCount " +
+                                "FROM PollItems pi " +
+                                "LEFT JOIN Votes v ON pi.menuItemId = v.menuItemId AND pi.pollId = v.pollId " +
+                                "WHERE pi.pollId = ? " +
+                                "GROUP BY pi.menuItemId";
+    
+        try (Connection connection = DatabaseUtil.getConnection();
+             PreparedStatement latestPollStmt = connection.prepareStatement(latestPollQuery)) {
+    
+            ResultSet rs = latestPollStmt.executeQuery();
+            if (rs.next()) {
+                int latestPollId = rs.getInt("pollId");
+    
+                try (PreparedStatement pollItemsStmt = connection.prepareStatement(pollItemsQuery)) {
+                    pollItemsStmt.setInt(1, latestPollId);
+    
+                    ResultSet pollItemsRs = pollItemsStmt.executeQuery();
+                    while (pollItemsRs.next()) {
+                        int menuItemId = pollItemsRs.getInt("menuItemId");
+                        int voteCount = pollItemsRs.getInt("voteCount");
+                        votesMap.put(menuItemId, voteCount);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    
+        return votesMap;
     }
 }

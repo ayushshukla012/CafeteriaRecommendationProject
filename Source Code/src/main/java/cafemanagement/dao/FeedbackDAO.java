@@ -138,4 +138,22 @@ public class FeedbackDAO {
         }
         return feedback;
     }
+
+    public void saveFeedback(int notificationId, int employeeId, String question, String response) {
+        String query = "INSERT INTO FeedbackQuery (notificationId, employeeId, question, response, responseDate) VALUES (?, ?, ?, ?, ?)";
+    
+        try (Connection conn = DatabaseUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+    
+            pstmt.setInt(1, notificationId);
+            pstmt.setInt(2, employeeId);
+            pstmt.setString(3, question);
+            pstmt.setString(4, response);
+            pstmt.setTimestamp(5, new java.sql.Timestamp(new java.util.Date().getTime()));
+    
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }

@@ -16,12 +16,12 @@ public class MenuItemService {
         return menuItemDAO.getMenuItemsByCategory(categoryId);
     }    
 
-    public boolean storeMenuItem(String itemName, int categoryId, float itemPrice, boolean availability) {
-        return menuItemDAO.storeMenuItem(itemName, categoryId, itemPrice, availability);
+    public boolean storeMenuItem(String itemName, int categoryId, float itemPrice, boolean availability, String spiceLevel, String cuisineType, boolean isSweet, String dietaryPreference) {
+        return menuItemDAO.storeMenuItem(itemName, categoryId, itemPrice, availability, spiceLevel, cuisineType, isSweet, dietaryPreference);
     }
 
-    public boolean updateMenuInDatabase(String itemName, String newItemName, float newItemPrice) {
-        return menuItemDAO.updateMenuInDatabase(itemName, newItemName, newItemPrice);
+    public boolean updateMenuInDatabase(int menuId, String newName, float newPrice, boolean newAvailability, String newSpiceLevel, String newCuisineType, boolean newIsSweet, String newDietaryPreference) {
+        return menuItemDAO.updateMenuInDatabase(menuId, newName, newPrice, newAvailability, newSpiceLevel, newCuisineType, newIsSweet, newDietaryPreference);
     }
 
     public List<Menu> getMenuItemsDetailsByCategory(int categoryId) {
@@ -46,5 +46,13 @@ public class MenuItemService {
 
     public Menu getMenuItemById(int menuId) {
         return menuItemDAO.getMenuItemById(menuId);
+    }
+
+    public int getMenuIdByName(String name) {
+        return menuItemDAO.getMenuIdByName(name);
+    }
+
+    public List<String> getAllMenuNames() {
+        return menuItemDAO.getAllMenuNames();
     }
 }
