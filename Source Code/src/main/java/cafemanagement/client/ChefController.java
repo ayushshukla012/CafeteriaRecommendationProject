@@ -185,12 +185,17 @@ public class ChefController {
                 List<Feedback> feedbacks = entry.getValue();
                 String itemName = menuItemMap.getOrDefault(menuId, "Unknown");
 
-                String feedbackDetails = feedbacks.stream()
-                        .map(f -> String.format("[%s] Quality: %d, Value for Money: %d, Quantity: %d, Taste: %d, Rating: %d, Comment: %s",
-                                f.getFeedbackDate(), f.getQuality(), f.getValueForMoney(), f.getQuantity(), f.getTaste(), f.getRating(), f.getComment()))
-                        .collect(Collectors.joining(" | "));
+                StringBuilder feedbackDetails = new StringBuilder();
+                for (Feedback feedback : feedbacks) {
+                    String comment = feedback.getComment() != null ? feedback.getComment() : "";
+                    String formattedFeedback = String.format("[%s] Quality: %d, Value for Money: %d, Quantity: %d, Taste: %d, Rating: %d, Comment: %s",
+                            feedback.getFeedbackDate(), feedback.getQuality(), feedback.getValueForMoney(),
+                            feedback.getQuantity(), feedback.getTaste(), feedback.getRating(), comment);
+                    feedbackDetails.append(formattedFeedback).append(" | ");
+                }
 
-                writer.append(String.format("| %-8d | %-18s | %-199s |\n", menuId, itemName, feedbackDetails));
+                writer.append(String.format("| %-8d | %-18s | %-199s |\n", menuId, itemName,
+                        feedbackDetails.toString()));
                 writer.append("+----------+--------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+\n");
             }
 
@@ -233,7 +238,7 @@ public class ChefController {
             List<Integer> selectedItems = new ArrayList<>();
             while (true) {
                 selectedItems.clear();
-                System.out.println("Select 5 items by entering their numbers (comma-separated):");
+                System.out.println("Select 3 to 5 items by entering their numbers (comma-separated):");
                 String[] selectedIndices = userInput.readLine().trim().split(",");
 
                 if (selectedIndices.length >= 3 && selectedIndices.length <= 5) {
@@ -317,8 +322,9 @@ public class ChefController {
                     .orElse(0.0);
 
             String sentiment = recommendationService.calculateSentiment(feedbacks);
+            System.out.println("sentiment " + sentiment +" avg rating " + averageRating);
 
-            if (averageRating < 2 && sentiment.equals("very negative")) {
+            if (averageRating < 2 || sentiment.equals("very negative")) {
                 discardMenuIds.add(menuId);
             }
         }

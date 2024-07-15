@@ -363,14 +363,24 @@ public class EmployeeController {
     }
 
     private void displayFeedback(Feedback feedback) {
+        if (feedback == null) {
+            System.out.println("No feedback available.");
+            return;
+        }
         System.out.println("Quality: " + feedback.getQuality());
         System.out.println("Value for Money: " + feedback.getValueForMoney());
         System.out.println("Quantity: " + feedback.getQuantity());
         System.out.println("Taste: " + feedback.getTaste());
         System.out.println("Rating: " + feedback.getRating());
-        System.out.println("Comments: " + feedback.getComment());
+        if (feedback.getComment() != null) {
+            System.out.println("Comments: " + feedback.getComment());
+        } else {
+            System.out.println("Comments: N/A");
+        }
+        
         System.out.println("Date: " + feedback.getFeedbackDate());
     }
+    
 
     private void printCategory(List<Menu> menuItems, int categoryId, String categoryName) {
         System.out.printf("| %-134s |%n", categoryName);

@@ -46,37 +46,48 @@ public class RecommendationService {
         Map<Integer, List<Feedback>> feedbackByMenu = groupFeedbackByMenuId(feedbacks);
         List<Menu> menuItems = menuItemService.getMenuItemsDetailsByCategory(menuCategoryId);
         List<Map<String, Object>> recommendedItems = new ArrayList<>();
-
+    
         List<Recommendation> recommendations = new ArrayList<>();
-
+    
         for (Menu menuItem : menuItems) {
             int menuId = menuItem.getMenuId();
             List<Feedback> menuFeedbacks = feedbackByMenu.getOrDefault(menuId, new ArrayList<>());
             double averageRating = calculateFeedbackAverage(menuFeedbacks);
             String sentiment = calculateSentiment(menuFeedbacks);
-
+    
             recommendations.add(new Recommendation(menuId, averageRating, sentiment));
         }
-
+    
         recommendations.sort(Comparator.comparingDouble(Recommendation::getAverageRating).reversed());
-
+    
         List<Recommendation> veryPositiveRecommendations = recommendations.stream()
                 .filter(r -> "very positive".equals(r.getSentimentAnalysis()))
                 .limit(5)
                 .collect(Collectors.toList());
-
-        if (veryPositiveRecommendations.size() < 5) {
-            List<Recommendation> positiveRecommendations = recommendations.stream()
-                    .filter(r -> "positive".equals(r.getSentimentAnalysis()))
-                    .limit(5 - veryPositiveRecommendations.size())
-                    .collect(Collectors.toList());
-
-            veryPositiveRecommendations.addAll(positiveRecommendations);
-        }
-
-        for (Recommendation recommendation : veryPositiveRecommendations) {
+    
+        List<Recommendation> positiveRecommendations = recommendations.stream()
+                .filter(r -> "positive".equals(r.getSentimentAnalysis()))
+                .limit(5)
+                .collect(Collectors.toList());
+    
+        List<Recommendation> additionalRecommendations = recommendations.stream()
+                .filter(r -> r.getAverageRating() > 2.0)
+                .limit(5)
+                .collect(Collectors.toList());
+    
+        List<Recommendation> combinedRecommendations = new ArrayList<>();
+        combinedRecommendations.addAll(veryPositiveRecommendations);
+        combinedRecommendations.addAll(positiveRecommendations);
+        combinedRecommendations.addAll(additionalRecommendations);
+    
+        List<Recommendation> finalRecommendations = combinedRecommendations.stream()
+                .distinct()
+                .limit(5)
+                .collect(Collectors.toList());
+    
+        for (Recommendation recommendation : finalRecommendations) {
             Menu menuItem = menuItemService.getMenuItemById(recommendation.getMenuId());
-
+    
             Map<String, Object> menuItemWithDetails = new HashMap<>();
             menuItemWithDetails.put("menuId", menuItem.getMenuId());
             menuItemWithDetails.put("name", menuItem.getName());
@@ -85,12 +96,13 @@ public class RecommendationService {
             menuItemWithDetails.put("availability", menuItem.isAvailability());
             menuItemWithDetails.put("averageRating", recommendation.getAverageRating());
             menuItemWithDetails.put("sentiment", recommendation.getSentimentAnalysis());
-
+    
             recommendedItems.add(menuItemWithDetails);
         }
-
+    
         return recommendedItems;
     }
+    
 
     private Map<Integer, List<Feedback>> groupFeedbackByMenuId(List<Feedback> feedbacks) {
         return feedbacks.stream()
@@ -110,9 +122,15 @@ public class RecommendationService {
     public String calculateSentiment(List<Feedback> feedbacks) {
         int positiveCount = 0;
         int negativeCount = 0;
-
+        int totalWords = 0;
+    
         for (Feedback feedback : feedbacks) {
-            String[] words = feedback.getComment().split("\\s+");
+            String comment = feedback.getComment();
+            if (comment == null || comment.trim().isEmpty()) {
+                continue; // Skip empty comments
+            }
+            
+            String[] words = comment.split("\\s+");
             for (String word : words) {
                 if (positiveWords.contains(word)) {
                     positiveCount++;
@@ -120,10 +138,16 @@ public class RecommendationService {
                     negativeCount++;
                 }
             }
+            totalWords += words.length;
         }
-        int totalWords = positiveCount + negativeCount;
+    
+        // Handle case where no valid comments were processed
+        if (totalWords == 0) {
+            return "neutral";
+        }
+    
         double sentimentScore = (double) (positiveCount - negativeCount) / totalWords;
-
+    
         if (sentimentScore >= 0.5) {
             return "very positive";
         } else if (sentimentScore > 0) {
@@ -135,7 +159,7 @@ public class RecommendationService {
         } else {
             return "very negative";
         }
-    }
+    }    
 
     public String calculateUserFeedbackSentiment(String feedback) {
         int positiveCount = 0;

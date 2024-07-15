@@ -480,22 +480,20 @@ protected void deleteMultipleMenuItems(int categoryId) throws IOException {
     protected void viewFullMenu() {
         System.out.println("Viewing Menu With Feedback...");
         List<Menu> menuItems = menuItemService.getAllMenuItems();
-    
+
         if (menuItems.isEmpty()) {
             System.out.println("No menu items found.");
             return;
         }
-    
+
         System.out.println("Menu items:");
         System.out.println(
-                "----------------------------------------------------------------------------------------------------------------------------------" +
-                "--------------------------------------------------------------");
-        System.out.printf("| %-5s | %-20s | %-10s | %-10s | %-15s | %-10s | %-15s | %-10s | %-10s | %-15s |%n", 
+            "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+        System.out.printf("| %-5s | %-20s | %-10s | %-10s | %-15s | %-10s | %-15s | %-10s | %-20s |%n", 
                 "ID", "Name", "Category", "Price", "Availability", "Spice Level", "Cuisine Type", "Sweet", "Dietary Preference");
         System.out.println(
-                "----------------------------------------------------------------------------------------------------------------------------------" +
-                "--------------------------------------------------------------");
-    
+            "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+
         printCategory(menuItems, 1, "Breakfast");
         printCategory(menuItems, 2, "Lunch");
         printCategory(menuItems, 3, "Dinner");
@@ -550,27 +548,25 @@ protected void deleteMultipleMenuItems(int categoryId) throws IOException {
     private void printCategory(List<Menu> menuItems, int categoryId, String categoryName) {
         System.out.printf("| %-134s |%n", categoryName);
         System.out.println(
-                "----------------------------------------------------------------------------------------------------------------------------------" +
-                "--------------------------------------------------------------");
+            "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     
         menuItems.stream()
-                .filter(menuItem -> menuItem.getCategoryId() == categoryId)
-                .forEach(menuItem -> {
-                    System.out.printf("| %-5d | %-20s | %-10d | %-10.2f | %-10s | %-15s | %-10s | %-10s | %-15s |%n",
-                            menuItem.getMenuId(),
-                            menuItem.getName(),
-                            menuItem.getCategoryId(),
-                            menuItem.getPrice(),
-                            menuItem.isAvailability() ? "Available" : "Not Available",
-                            menuItem.getSpiceLevel(),
-                            menuItem.getCuisineType(),
-                            menuItem.isSweet() ? "Yes" : "No",
-                            menuItem.getDietaryPreference());
-                });
+            .filter(menuItem -> menuItem.getCategoryId() == categoryId)
+            .forEach(menuItem -> {
+                System.out.printf("| %-5d | %-20s | %-10s | %-10.2f | %-15s | %-10s | %-15s | %-10s | %-20s |%n",
+                        menuItem.getMenuId(),
+                        menuItem.getName(),
+                        menuItem.getCategoryId(),
+                        menuItem.getPrice(),
+                        menuItem.isAvailability() ? "Available" : "Not Available",
+                        menuItem.getSpiceLevel(),
+                        menuItem.getCuisineType(),
+                        menuItem.isSweet() ? "Yes" : "No",
+                        menuItem.getDietaryPreference());
+            });
     
         System.out.println(
-                "----------------------------------------------------------------------------------------------------------------------------------" +
-                "--------------------------------------------------------------");
+            "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
     }
 
     private List<Integer> getAllEmployeeId() {
