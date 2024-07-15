@@ -17,13 +17,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ClientHandler implements Runnable {
     private final Socket clientSocket;
-    private final UserService userService;
+    public final UserService userService;  // Changed to package-private
+    public final PollService pollService;  // Changed to package-private
     private final ConcurrentHashMap<String, ClientHandler> clients;
     private PrintWriter writer;
     private User loggedInUser;
     private String loggedInRole;
     private final Queue<String> notificationsQueue = new ConcurrentLinkedQueue<>();
-    private final PollService pollService;
 
     public ClientHandler(Socket clientSocket, ConcurrentHashMap<String, ClientHandler> clients) {
         this.clientSocket = clientSocket;

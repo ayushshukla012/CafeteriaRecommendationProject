@@ -12,7 +12,7 @@ public class AuthServer {
     private static final ExecutorService executor = Executors.newFixedThreadPool(10);
     private static final ConcurrentHashMap<String, ClientHandler> clients = new ConcurrentHashMap<>();
 
-    public static void main(String[] args) {
+    public void startServer() {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Server started. Listening on port " + PORT);
 

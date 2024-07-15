@@ -24,12 +24,12 @@ public class ChefController {
     private User currentUser;
     private PrintWriter writer;
     private BufferedReader userInput;
-    private NotificationService notificationService;
-    private UserService userService;
-    private PollService pollService;
-    private MenuItemService menuItemService;
-    private RecommendationService recommendationService;
-    private FeedbackService feedbackService;
+    protected NotificationService notificationService;
+    protected UserService userService;
+    protected PollService pollService;
+    protected MenuItemService menuItemService;
+    protected RecommendationService recommendationService;
+    protected FeedbackService feedbackService;
 
     public ChefController(User currentUser, PrintWriter writer, BufferedReader userInput) {
         this.currentUser = currentUser;
@@ -114,7 +114,7 @@ public class ChefController {
         }
     }
 
-    private void sendEmployeeNotification() throws IOException {
+    protected void sendEmployeeNotification() throws IOException {
         try {
             String notificationType = "Recommendation";
 
@@ -132,7 +132,7 @@ public class ChefController {
         }
     }
 
-    private void viewMenu() {
+    protected void viewMenu() {
         System.out.println("Viewing Menu With Feedback...");
         List<Menu> menuItems = menuItemService.getAllMenuItems();
     
@@ -156,7 +156,7 @@ public class ChefController {
         printCategory(menuItems, 3, "Dinner");
     }
 
-    private void generateFeedbackReport() {
+    protected void generateFeedbackReport() {
         System.out.println("Generating feedback report...");
 
         List<Feedback> feedbackList = feedbackService.getAllFeedback();
@@ -196,7 +196,7 @@ public class ChefController {
         }
     }
 
-    private void sendDishesToReview() {
+    protected void sendDishesToReview() {
         try {
             System.out.println("Enter the category ID for the poll (1 for Breakfast, 2 for Lunch, 3 for Dinner):");
             int categoryId = readIntegerInput();
@@ -292,7 +292,7 @@ public class ChefController {
         }
     }
 
-    private void getDiscardedMenu() {
+    protected void getDiscardedMenu() {
         System.out.println("Fetching discarded menu items...");
 
         List<Feedback> feedbackList = feedbackService.getAllFeedback();
@@ -431,7 +431,7 @@ public class ChefController {
         }
     }
 
-    private void logout() {
+    protected void logout() {
         try {
             writer.println("LOGOUT");
             System.out.println("Logged out.");
@@ -480,7 +480,7 @@ public class ChefController {
         return messageBuilder.toString().trim();
     }
 
-    private void getRecommendation() {
+    protected void getRecommendation() {
         System.out.println("Enter feedback to calculate the sentiment.");
         try {
             String input = userInput.readLine().trim();

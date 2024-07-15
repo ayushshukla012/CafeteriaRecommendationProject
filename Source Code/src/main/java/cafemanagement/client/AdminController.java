@@ -14,7 +14,7 @@ public class AdminController {
     private User currentUser;
     private PrintWriter writer;
     private BufferedReader userInput;
-    private MenuItemService menuItemService;
+    MenuItemService menuItemService;
 
     public AdminController(User currentUser, PrintWriter writer, BufferedReader userInput) {
         this.currentUser = currentUser;
@@ -205,7 +205,7 @@ public void updateMenuItem() {
     }
 }
 
-private void deleteMenuItem() {
+protected void deleteMenuItem() {
     try {
         int categoryId = selectFoodCategory();
         if (categoryId == -1) {
@@ -236,7 +236,7 @@ private void deleteMenuItem() {
     }
 }
 
-private void deleteSingleMenuItem(int categoryId) throws IOException {
+protected void deleteSingleMenuItem(int categoryId) throws IOException {
     try {
         List<Menu> menuItems = menuItemService.getMenuItemsDetailsByCategory(categoryId);
 
@@ -277,7 +277,7 @@ private void deleteSingleMenuItem(int categoryId) throws IOException {
     }
 }
 
-private void deleteMultipleMenuItems(int categoryId) throws IOException {
+protected void deleteMultipleMenuItems(int categoryId) throws IOException {
     try {
         List<Menu> menuItems = menuItemService.getMenuItemsDetailsByCategory(categoryId);
 
@@ -339,11 +339,11 @@ private void deleteMultipleMenuItems(int categoryId) throws IOException {
     }
 }
 
-    private void checkItemAvailability() {
+    protected void checkItemAvailability() {
         System.out.println("Checking item availability...");
     }
 
-    private void viewFullMenu() {
+    protected void viewFullMenu() {
         System.out.println("Viewing Menu With Feedback...");
         List<Menu> menuItems = menuItemService.getAllMenuItems();
     
@@ -367,7 +367,7 @@ private void deleteMultipleMenuItems(int categoryId) throws IOException {
         printCategory(menuItems, 3, "Dinner");
     }
 
-    private void logout() {
+    protected void logout() {
         try {
             writer.println("LOGOUT");
             System.out.println("Logged out.");

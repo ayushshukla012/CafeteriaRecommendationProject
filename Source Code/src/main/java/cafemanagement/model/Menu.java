@@ -14,11 +14,17 @@ public class Menu {
     public Menu() {
     }
 
-    public Menu(String name, int categoryId, float price, boolean availability) {
+    public Menu(int menuId, String name, int categoryId, float price, boolean isSweet,
+                String spiceLevel, String cuisineType, boolean availability, String dietaryPreference) {
+        this.menuId = menuId;
         this.name = name;
         this.categoryId = categoryId;
         this.price = price;
+        this.isSweet = isSweet;
+        this.spiceLevel = spiceLevel;
+        this.cuisineType = cuisineType;
         this.availability = availability;
+        this.dietaryPreference = dietaryPreference;
     }
 
     public int getMenuId() {
@@ -100,6 +106,10 @@ public class Menu {
                 ", name='" + name + '\'' +
                 ", categoryId=" + categoryId +
                 ", price=" + price +
+                ", cuisineType='" + cuisineType + '\'' +
+                ", spiceLevel='" + spiceLevel + '\'' +
+                ", isSweet=" + isSweet +
+                ", dietaryPreference='" + dietaryPreference + '\'' +
                 ", availability=" + availability +
                 '}';
     }

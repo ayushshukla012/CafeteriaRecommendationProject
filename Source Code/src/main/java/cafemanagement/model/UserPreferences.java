@@ -8,6 +8,17 @@ public class UserPreferences {
     private String preferredCuisine;
     private boolean sweetTooth;
 
+    public UserPreferences() {
+    }
+
+    public UserPreferences(int employeeId, String dietaryPreference, String spiceLevel, String preferredCuisine, boolean sweetTooth) {
+        this.employeeId = employeeId;
+        this.dietaryPreference = dietaryPreference;
+        this.spiceLevel = spiceLevel;
+        this.preferredCuisine = preferredCuisine;
+        this.sweetTooth = sweetTooth;
+    }
+
     // Getters and setters
     public int getPreferenceId() {
         return preferenceId;

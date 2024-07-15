@@ -29,11 +29,11 @@ public class EmployeeController {
     private Queue<String> notificationsQueue;
     private PrintWriter writer;
     private BufferedReader userInput;
-    private NotificationService notificationService;
-    private PollService pollService;
-    private MenuItemService menuItemService;
-    private FeedbackService feedbackService;
-    private UserPreferencesService userPreferencesService;
+    protected NotificationService notificationService;
+    protected PollService pollService;
+    protected MenuItemService menuItemService;
+    protected FeedbackService feedbackService;
+    protected UserPreferencesService userPreferencesService;
 
     public EmployeeController(User currentUser, Queue<String> notificationsQueue, PrintWriter writer, BufferedReader userInput) {
         this.currentUser = currentUser;
@@ -60,7 +60,7 @@ public class EmployeeController {
         }
     }
 
-    private void displayMenu() {
+    protected void displayMenu() {
         System.out.println("Employee Menu:");
         System.out.println("1. See notifications");
         System.out.println("2. Provide feedback");
@@ -95,7 +95,7 @@ public class EmployeeController {
         }
     }
 
-    private void showNotifications() {
+    protected void showNotifications() {
         int employeeId = getUserIdByCurrentUser(currentUser);
 
         List<Notification> notifications = notificationService.getUnreadNotifications(employeeId);
@@ -111,7 +111,7 @@ public class EmployeeController {
         }
     }
 
-    private void provideFeedback() {
+    protected void provideFeedback() {
         int employeeId = getUserIdByCurrentUser(currentUser);
         try {
             int categoryId = selectFoodCategory();
@@ -193,7 +193,7 @@ public class EmployeeController {
         return feedback;
     }
 
-    private void selectMealForTomorrow() {
+    protected void selectMealForTomorrow() {
         List<PollItem> pollItems = pollService.getPollItemsForToday();
     
         if (pollItems.isEmpty()) {
@@ -236,7 +236,7 @@ public class EmployeeController {
         }
     }
 
-    private void viewMenu() {
+    protected void viewMenu() {
         System.out.println("Viewing Menu With Feedback...");
         List<Menu> menuItems = menuItemService.getAllMenuItems();
 
@@ -258,7 +258,7 @@ public class EmployeeController {
         printCategory(menuItems, 3, "Dinner");
     }
 
-    private void logout() {
+    protected void logout() {
         try {
             writer.println("LOGOUT");
             System.out.println("Logged out.");
@@ -344,7 +344,7 @@ public class EmployeeController {
                 "--------------------------------------------------------------");
     }
 
-    private List<PollItem> sortPollItems(List<PollItem> pollItems, UserPreferences userPreferences) {
+    protected List<PollItem> sortPollItems(List<PollItem> pollItems, UserPreferences userPreferences) {
     return pollItems.stream()
             .map(pollItem -> {
                 Menu menuItem = menuItemService.getMenuItemById(pollItem.getMenuItemId());
@@ -418,7 +418,7 @@ public class EmployeeController {
         }
     }
 
-    private void updateProfile() {
+    protected void updateProfile() {
         try {
             System.out.println("Updating your Profile...");
             int employeeId = getUserIdByCurrentUser(currentUser);

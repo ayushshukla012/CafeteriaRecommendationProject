@@ -13,7 +13,7 @@ public class MainApplication {
 
         switch (args[0].toLowerCase()) {
             case "server":
-                AuthServer.main(args);
+                startServer();
                 break;
             case "client":
                 AuthClient.main(args);
@@ -22,5 +22,11 @@ public class MainApplication {
                 System.out.println("Unknown argument. Please specify 'server' or 'client'.");
                 break;
         }
+    }
+
+    private static void startServer() {
+        AuthServer authServer = new AuthServer();
+        Thread serverThread = new Thread(authServer::startServer);
+        serverThread.start();
     }
 }
