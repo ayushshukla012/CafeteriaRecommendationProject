@@ -109,7 +109,7 @@ public class AuthClient {
         }
 
         writer.println("LOGIN:" + userId + ":" + password + ":" + roleNameString);
-        writer.flush(); // Ensure data is sent immediately to the server
+        writer.flush();
 
         String response = serverReader.readLine();
 
@@ -170,18 +170,22 @@ public class AuthClient {
         // For example:
         switch (roleName) {
             case "1":
-                // new EmployeeController(loggedInUser, notificationsQueue, writer, userInput).start();
+                new EmployeeController(loggedInUser, notificationsQueue, writer, userInput).start();
                 break;
             case "2":
-                // new ChefController(loggedInUser, writer, userInput).start();
+                new ChefController(loggedInUser, writer, userInput).start();
                 break;
             case "3":
-                // new AdminController(loggedInUser, writer, userInput).start();
+                new AdminController(loggedInUser, writer, userInput).start();
                 break;
             default:
                 System.out.println("Invalid role selected.");
                 break;
         }
+    }
+
+    public static BufferedReader getServerReader() {
+        return serverReader;
     }
 
     public static void main(String[] args) {
