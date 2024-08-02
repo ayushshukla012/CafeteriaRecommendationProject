@@ -141,7 +141,6 @@ public class RecommendationService {
             totalWords += words.length;
         }
     
-        // Handle case where no valid comments were processed
         if (totalWords == 0) {
             return "neutral";
         }

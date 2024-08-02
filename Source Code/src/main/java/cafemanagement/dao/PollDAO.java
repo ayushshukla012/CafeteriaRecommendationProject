@@ -12,7 +12,6 @@ import java.util.Map;
 
 public class PollDAO {
 
-    // Method to create a new poll
     public int createPoll(int chefId, Date pollDate) {
         String insertPollQuery = "INSERT INTO Polls (chefId, pollDate) VALUES (?, ?)";
         int pollId = -1;
@@ -36,7 +35,6 @@ public class PollDAO {
         return pollId;
     }
 
-    // Method to add items to a poll
     public void addItemsToPoll(int pollId, List<Integer> menuItemIds) {
         String insertPollItemQuery = "INSERT INTO PollItems (pollId, menuItemId) VALUES (?, ?)";
 
@@ -85,7 +83,6 @@ public class PollDAO {
         return pollItems;
     }
 
-    // Method to cast a vote
     public void castVote(int pollId, int menuItemId, int employeeId) {
         String insertVoteQuery = "INSERT INTO Votes (pollId, menuItemId, employeeId) VALUES (?, ?, ?)";
 
@@ -127,7 +124,6 @@ public class PollDAO {
         return hasVoted;
     }
 
-    // Method to clear voting results before new poll
     public void clearVotingResults() {
         String deleteVotesQuery = "DELETE FROM Votes WHERE voteDate < CURDATE()";
 
@@ -173,5 +169,26 @@ public class PollDAO {
         }
     
         return votesMap;
+    }
+
+    public boolean pollExistsForCategoryOnDate(int categoryId, Date pollDate) {
+        String checkPollQuery = "SELECT COUNT(*) FROM Polls p " +
+                                "JOIN PollItems pi ON p.pollId = pi.pollId " +
+                                "JOIN Menu m ON pi.menuItemId = m.menuId " +
+                                "WHERE m.categoryId = ? AND p.pollDate = ?";
+        try (Connection conn = DatabaseUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(checkPollQuery)) {
+    
+            pstmt.setInt(1, categoryId);
+            pstmt.setDate(2, new java.sql.Date(pollDate.getTime()));
+    
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }

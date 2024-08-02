@@ -63,7 +63,7 @@ public class NotificationDaoTest {
 
         verify(mockConnection, times(receiverIds.size())).prepareStatement(anyString());
         verify(mockPsUserNotification, times(receiverIds.size())).setInt(eq(1), anyInt());
-        verify(mockPsUserNotification, times(receiverIds.size())).setInt(eq(2), eq(1)); // Assuming notificationId generated as 1
+        verify(mockPsUserNotification, times(receiverIds.size())).setInt(eq(2), eq(1));
         verify(mockPsUserNotification, times(receiverIds.size())).addBatch();
         verify(mockPsUserNotification, times(receiverIds.size())).executeBatch();
     }

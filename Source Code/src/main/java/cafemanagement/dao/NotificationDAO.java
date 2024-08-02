@@ -16,21 +16,18 @@ public class NotificationDAO {
         try (Connection conn = DatabaseUtil.getConnection();
              PreparedStatement psNotification = conn.prepareStatement(insertNotificationSQL, PreparedStatement.RETURN_GENERATED_KEYS)) {
 
-            // Insert notification into Notifications table
             psNotification.setInt(1, senderId);
             psNotification.setString(2, notificationType);
             psNotification.setInt(3, menuItemId);
             psNotification.setString(4, message);
             psNotification.executeUpdate();
 
-            // Retrieve generated notification ID
             ResultSet rs = psNotification.getGeneratedKeys();
             int notificationId = -1;
             if (rs.next()) {
                 notificationId = rs.getInt(1);
             }
 
-            // Insert user notifications into UserNotifications table
             try (PreparedStatement psUserNotification = conn.prepareStatement(insertUserNotificationSQL)) {
                 for (int receiverId : receiverIds) {
                     psUserNotification.setInt(1, receiverId);
@@ -91,7 +88,7 @@ public class NotificationDAO {
             statement.executeUpdate();
 
         } catch (SQLException e) {
-            e.printStackTrace(); // Handle properly in your application, e.g., logging
+            e.printStackTrace();
         }
     }
 }

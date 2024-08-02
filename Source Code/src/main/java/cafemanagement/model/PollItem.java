@@ -38,8 +38,6 @@ public class PollItem {
         this.menuItem = menuItem;
     }
     
-
-    // Optionally, you may override toString() for debugging or logging purposes
     @Override
     public String toString() {
         return "PollItem{" +

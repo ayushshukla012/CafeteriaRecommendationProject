@@ -43,6 +43,7 @@ public class AdminController {
     }
 
     private void displayMenu() {
+        System.out.println();
         System.out.println("Admin Menu:");
         System.out.println("1. Add menu item");
         System.out.println("2. Update menu item");
@@ -478,7 +479,7 @@ protected void deleteMultipleMenuItems(int categoryId) throws IOException {
 }
 
     protected void viewFullMenu() {
-        System.out.println("Viewing Menu With Feedback...");
+        System.out.println("Viewing Full Menu...");
         List<Menu> menuItems = menuItemService.getAllMenuItems();
 
         if (menuItems.isEmpty()) {
@@ -488,11 +489,11 @@ protected void deleteMultipleMenuItems(int categoryId) throws IOException {
 
         System.out.println("Menu items:");
         System.out.println(
-            "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+            "------------------------------------------------------------------------------------------------------------------------------------------------");
         System.out.printf("| %-5s | %-20s | %-10s | %-10s | %-15s | %-10s | %-15s | %-10s | %-20s |%n", 
                 "ID", "Name", "Category", "Price", "Availability", "Spice Level", "Cuisine Type", "Sweet", "Dietary Preference");
         System.out.println(
-            "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+            "------------------------------------------------------------------------------------------------------------------------------------------------");
 
         printCategory(menuItems, 1, "Breakfast");
         printCategory(menuItems, 2, "Lunch");
@@ -548,7 +549,7 @@ protected void deleteMultipleMenuItems(int categoryId) throws IOException {
     private void printCategory(List<Menu> menuItems, int categoryId, String categoryName) {
         System.out.printf("| %-134s |%n", categoryName);
         System.out.println(
-            "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+            "------------------------------------------------------------------------------------------------------------------------------------------------");
     
         menuItems.stream()
             .filter(menuItem -> menuItem.getCategoryId() == categoryId)
@@ -566,7 +567,7 @@ protected void deleteMultipleMenuItems(int categoryId) throws IOException {
             });
     
         System.out.println(
-            "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+            "------------------------------------------------------------------------------------------------------------------------------------------------");
     }
 
     private List<Integer> getAllEmployeeId() {
@@ -581,7 +582,7 @@ protected void deleteMultipleMenuItems(int categoryId) throws IOException {
 
     private int getUserIdByCurrentUser(User currentUserInstance) {
         int userId = currentUserInstance.getUserId();
-        return userId != 0 ? userId : -1; // Return -1 if user not found
+        return userId != 0 ? userId : -1;
     }
     
     private void sendNotification(String message, String notificationType, int menuItemId) {

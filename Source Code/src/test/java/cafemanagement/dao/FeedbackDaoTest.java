@@ -38,8 +38,7 @@ public class FeedbackDaoTest {
 
     @Test
     public void testGetFeedbackByEmployeeAndMenu() throws SQLException {
-        // Mock ResultSet data
-        when(mockResultSet.next()).thenReturn(true); // Simulate ResultSet having data
+        when(mockResultSet.next()).thenReturn(true);
         when(mockResultSet.getInt("feedbackId")).thenReturn(1);
         when(mockResultSet.getInt("employeeId")).thenReturn(1);
         when(mockResultSet.getInt("menuId")).thenReturn(1);
@@ -53,13 +52,11 @@ public class FeedbackDaoTest {
 
         Feedback feedback = feedbackDAO.getFeedbackByEmployeeAndMenu(1, 1);
 
-        // Verify interactions with mocks
-        verify(mockConnection).prepareStatement(anyString()); // Verify prepareStatement was called
-        verify(mockStatement).setInt(1, 1); // Verify setInt parameters
-        verify(mockStatement).setInt(2, 1); // Verify setInt parameters
-        verify(mockStatement).executeQuery(); // Verify executeQuery was called
+        verify(mockConnection).prepareStatement(anyString());
+        verify(mockStatement).setInt(1, 1);
+        verify(mockStatement).setInt(2, 1);
+        verify(mockStatement).executeQuery();
 
-        // Verify feedback object properties
         assertEquals(1, feedback.getFeedbackId());
         assertEquals(1, feedback.getEmployeeId());
         assertEquals(1, feedback.getMenuId());
@@ -69,7 +66,6 @@ public class FeedbackDaoTest {
         assertEquals(4, feedback.getTaste());
         assertEquals(5, feedback.getRating());
         assertEquals("Great food!", feedback.getComment());
-        // Adjust date comparison based on your requirements
         assertEquals(new Date().toString(), feedback.getFeedbackDate().toString());
     }
 
@@ -91,7 +87,7 @@ public class FeedbackDaoTest {
     @Test
     public void testUpdateFeedback() throws SQLException {
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
-        when(mockStatement.executeUpdate()).thenReturn(1); // Simulate update success
+        when(mockStatement.executeUpdate()).thenReturn(1);
 
         Feedback feedback = new Feedback();
         feedback.setFeedbackId(1);
@@ -107,8 +103,8 @@ public class FeedbackDaoTest {
 
     @Test
     public void testGetAllFeedback() throws SQLException {
-        when(mockResultSet.next()).thenReturn(true, true, false); // Simulate two rows
-        when(mockResultSet.getInt("feedbackId")).thenReturn(1, 2); // Mock different IDs
+        when(mockResultSet.next()).thenReturn(true, true, false);
+        when(mockResultSet.getInt("feedbackId")).thenReturn(1, 2);
 
         List<Feedback> feedbackList = feedbackDAO.getAllFeedback();
 

@@ -20,6 +20,7 @@ import java.io.PrintWriter;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
@@ -63,6 +64,7 @@ public class EmployeeController {
     }
 
     protected void displayMenu() {
+        System.out.println();
         System.out.println("Employee Menu:");
         System.out.println("1. See notifications");
         System.out.println("2. Provide feedback");
@@ -225,8 +227,7 @@ public class EmployeeController {
     private void printFeedbackMenu(List<Menu> menuItems, String categoryName) {
         System.out.printf("| %-134s |%n", categoryName);
         System.out.println(
-            "----------------------------------------------------------------------------------------------------------------------------------" +
-            "--------------------------------------------------------------");
+            "--------------------------------------------------------------------------------------------------------------------------------------------");
     
         menuItems.forEach(menuItem -> {
             System.out.printf("| %-5d | %-20s | %-10d | %-10.2f | %-10s | %-15s | %-10s | %-10s | %-15s |%n",
@@ -242,56 +243,71 @@ public class EmployeeController {
         });
     
         System.out.println(
-            "----------------------------------------------------------------------------------------------------------------------------------" +
-            "--------------------------------------------------------------");
+            "--------------------------------------------------------------------------------------------------------------------------------------------");
     }
     
 
     protected void selectMealForTomorrow() {
-        List<PollItem> pollItems = pollService.getPollItemsForToday();
-    
-        if (pollItems.isEmpty()) {
-            System.out.println("No items available for voting today.");
-            return;
-        }
-    
-        int employeeId = getUserIdByCurrentUser(currentUser);
-        UserPreferences userPreferences = userPreferencesService.getPreferencesByEmployeeId(employeeId);
-        pollItems = sortPollItems(pollItems, userPreferences);
-        
-        int pollId = pollItems.get(0).getPollId();
-        if (pollService.hasVotedToday(pollId, employeeId)) {
-            System.out.println("Employee has already voted for today's poll.");
-            return;
-        }
-    
-        System.out.println("Select one meal for tomorrow:");
-        List<Menu> sortedMenuItems = new ArrayList<>();
-        for (int i = 0; i < pollItems.size(); i++) {
-            PollItem item = pollItems.get(i);
-            Menu menuItem = menuItemService.getMenuItemById(item.getMenuItemId());
-            sortedMenuItems.add(menuItem);
-            System.out.println((i + 1) + ". " + menuItem.getName() + " (Menu Item ID: " + item.getMenuItemId() + ")");
-        }
-
-        displaySuggestion(userPreferences, sortedMenuItems);
-    
         try {
-            int selectedIndex = readIntegerInput();
-            if (selectedIndex >= 1 && selectedIndex <= pollItems.size()) {
-                PollItem selectedPollItem = pollItems.get(selectedIndex - 1);
-                System.out.println("Selected Poll Item ID: " + selectedPollItem.getPollItemId() + ", Menu Item ID: " + selectedPollItem.getMenuItemId());
-                voteForSelectedMeal(selectedPollItem, employeeId);
-            } else {
-                System.out.println("Invalid selection. Please select a valid number.");
+            int categoryId = selectFoodCategory();
+            if (categoryId == -1) {
+                System.out.println("Invalid category selected.");
+                return;
             }
-        } catch (IOException e) {
-            System.err.println("Error reading input: " + e.getMessage());
+
+            Date today = new java.sql.Date(System.currentTimeMillis());
+            if (!pollService.pollExistsForCategoryOnDate(categoryId, today)) {
+                System.out.println("No poll created for this category today. Please select another category.");
+                return;
+            }
+            
+            List<PollItem> pollItems = pollService.getPollItemsForToday();
+        
+            if (pollItems.isEmpty()) {
+                System.out.println("No items available for voting today.");
+                return;
+            }
+        
+            int employeeId = getUserIdByCurrentUser(currentUser);
+            UserPreferences userPreferences = userPreferencesService.getPreferencesByEmployeeId(employeeId);
+            pollItems = sortPollItems(pollItems, userPreferences);
+            
+            int pollId = pollItems.get(0).getPollId();
+            if (pollService.hasVotedToday(pollId, employeeId)) {
+                System.out.println("Employee has already voted for today's poll.");
+                return;
+            }
+        
+            System.out.println("Select one meal for tomorrow:");
+            List<Menu> sortedMenuItems = new ArrayList<>();
+            for (int i = 0; i < pollItems.size(); i++) {
+                PollItem item = pollItems.get(i);
+                Menu menuItem = menuItemService.getMenuItemById(item.getMenuItemId());
+                sortedMenuItems.add(menuItem);
+                System.out.println((i + 1) + ". " + menuItem.getName() + " (Menu Item ID: " + item.getMenuItemId() + ")");
+            }
+
+            displaySuggestion(userPreferences, sortedMenuItems);
+        
+            try {
+                int selectedIndex = readIntegerInput();
+                if (selectedIndex >= 1 && selectedIndex <= pollItems.size()) {
+                    PollItem selectedPollItem = pollItems.get(selectedIndex - 1);
+                    System.out.println("Selected Poll Item ID: " + selectedPollItem.getPollItemId() + ", Menu Item ID: " + selectedPollItem.getMenuItemId());
+                    voteForSelectedMeal(selectedPollItem, employeeId);
+                } else {
+                    System.out.println("Invalid selection. Please select a valid number.");
+                }
+            } catch (IOException e) {
+                System.err.println("Error reading input: " + e.getMessage());
+            }
+        } catch (IOException | NumberFormatException e) {
+            System.err.println("Error: " + e.getMessage());
         }
     }
 
     protected void viewMenu() {
-        System.out.println("Viewing Menu With Feedback...");
+        System.out.println("Viewing Full Menu...");
         List<Menu> menuItems = menuItemService.getAllMenuItems();
 
         if (menuItems.isEmpty()) {
@@ -324,7 +340,7 @@ public class EmployeeController {
 
     private int getUserIdByCurrentUser(User currentUserInstance) {
         int userId = currentUserInstance.getUserId();
-        return userId != 0 ? userId : -1; // Return -1 if user not found
+        return userId != 0 ? userId : -1;
     }
 
     private int readIntegerInput() throws IOException {
@@ -385,8 +401,7 @@ public class EmployeeController {
     private void printCategory(List<Menu> menuItems, int categoryId, String categoryName) {
         System.out.printf("| %-134s |%n", categoryName);
         System.out.println(
-                "----------------------------------------------------------------------------------------------------------------------------------" +
-                "--------------------------------------------------------------");
+                "-------------------------------------------------------------------------------------------------------");
     
         menuItems.stream()
                 .filter(menuItem -> menuItem.getCategoryId() == categoryId)
@@ -404,8 +419,7 @@ public class EmployeeController {
                 });
     
         System.out.println(
-                "----------------------------------------------------------------------------------------------------------------------------------" +
-                "--------------------------------------------------------------");
+                "-------------------------------------------------------------------------------------------------------");
     }
 
     protected List<PollItem> sortPollItems(List<PollItem> pollItems, UserPreferences userPreferences) {
@@ -419,13 +433,10 @@ public class EmployeeController {
                 Menu menuItem1 = item1.getMenuItem();
                 Menu menuItem2 = item2.getMenuItem();
 
-                // Sort by dietary preference first
                 int dietaryComparison = menuItem1.getDietaryPreference().compareTo(userPreferences.getDietaryPreference());
                 if (dietaryComparison != 0) {
                     return dietaryComparison;
                 }
-
-                // Additional sorting criteria can be added here
                 return menuItem1.getName().compareTo(menuItem2.getName());
             })
             .collect(Collectors.toList());
@@ -435,7 +446,6 @@ public class EmployeeController {
         boolean suggestionMade = false;
     
         for (Menu menuItem : sortedMenuItems) {
-            // Suggest based on spice level
             if (menuItem.getSpiceLevel().equals(userPreferences.getSpiceLevel())) {
                 System.out.println("Because you like " + userPreferences.getSpiceLevel() + " spice level, you can go with " + menuItem.getName() + ".");
                 suggestionMade = true;
@@ -445,7 +455,6 @@ public class EmployeeController {
     
         if (!suggestionMade) {
             for (Menu menuItem : sortedMenuItems) {
-                // Suggest based on dietary preference
                 if (menuItem.getDietaryPreference().equals(userPreferences.getDietaryPreference())) {
                     System.out.println("Because you prefer " + userPreferences.getDietaryPreference() + " food, you can go with " + menuItem.getName() + ".");
                     suggestionMade = true;
@@ -456,7 +465,6 @@ public class EmployeeController {
     
         if (!suggestionMade) {
             for (Menu menuItem : sortedMenuItems) {
-                // Suggest based on preferred cuisine
                 if (menuItem.getCuisineType().equals(userPreferences.getPreferredCuisine())) {
                     System.out.println("Because you like " + userPreferences.getPreferredCuisine() + " cuisine, you can go with " + menuItem.getName() + ".");
                     suggestionMade = true;
@@ -467,7 +475,6 @@ public class EmployeeController {
     
         if (!suggestionMade && userPreferences.isSweetTooth()) {
             for (Menu menuItem : sortedMenuItems) {
-                // Suggest based on sweet tooth
                 if (menuItem.isSweet()) {
                     System.out.println("Since you have a sweet tooth, you might like " + menuItem.getName() + ".");
                     suggestionMade = true;
@@ -477,7 +484,6 @@ public class EmployeeController {
         }
     
         if (!suggestionMade) {
-            // Default suggestion if no specific match found
             System.out.println("Based on your preferences, you can choose any of the available options.");
         }
     }
@@ -495,7 +501,6 @@ public class EmployeeController {
                 preferences.setEmployeeId(currentUser.getUserId());
             }
     
-            // Display current preferences if they exist
             if (!isNewProfile) {
                 System.out.println("Your current preferences:");
                 System.out.printf("Dietary Preference: %s%n", preferences.getDietaryPreference());
@@ -504,10 +509,8 @@ public class EmployeeController {
                 System.out.printf("Sweet Tooth: %s%n", preferences.isSweetTooth() ? "Yes" : "No");
             }
     
-            // Update profile questions
             System.out.println("Please answer these questions to update your preferences:");
     
-            // Question 1: Dietary Preference
             System.out.println("1) Please select one-");
             System.out.println("   1. Vegetarian");
             System.out.println("   2. Non Vegetarian");
@@ -525,7 +528,6 @@ public class EmployeeController {
                     preferences.setDietaryPreference("Eggetarian");
                     break;
                 case 4:
-                    // Skip updating dietary preference
                     break;
                 default:
                     System.out.println("Invalid input. Updating with default value (Vegetarian).");
@@ -533,7 +535,6 @@ public class EmployeeController {
                     break;
             }
     
-            // Question 2: Spice Level
             System.out.println("2) Please select your spice level");
             System.out.println("   1. High");
             System.out.println("   2. Medium");
@@ -551,7 +552,6 @@ public class EmployeeController {
                     preferences.setSpiceLevel("Low");
                     break;
                 case 4:
-                    // Skip updating spice level
                     break;
                 default:
                     System.out.println("Invalid input. Updating with default value (Medium).");
@@ -559,7 +559,6 @@ public class EmployeeController {
                     break;
             }
     
-            // Question 3: Preferred Cuisine
             System.out.println("3) What do you prefer most?");
             System.out.println("   1. North Indian");
             System.out.println("   2. South Indian");
@@ -589,7 +588,6 @@ public class EmployeeController {
                     preferences.setPreferredCuisine("Other");
                     break;
                 case 7:
-                    // Skip updating preferred cuisine
                     break;
                 default:
                     System.out.println("Invalid input. Updating with default value (Other).");
@@ -597,7 +595,6 @@ public class EmployeeController {
                     break;
             }
     
-            // Question 4: Sweet Tooth
             System.out.println("4) Do you have a sweet tooth?");
             System.out.println("   1. Yes");
             System.out.println("   2. No");
@@ -611,7 +608,6 @@ public class EmployeeController {
                     preferences.setSweetTooth(false);
                     break;
                 case 3:
-                    // Skip updating sweet tooth preference
                     break;
                 default:
                     System.out.println("Invalid input. Updating with default value (No sweet tooth).");
@@ -619,7 +615,6 @@ public class EmployeeController {
                     break;
             }
     
-            // Update or insert the preferences
             if (isNewProfile) {
                 try {
                     userPreferencesService.insertUserPreferences(preferences);

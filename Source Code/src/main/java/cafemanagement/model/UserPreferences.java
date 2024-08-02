@@ -19,7 +19,6 @@ public class UserPreferences {
         this.sweetTooth = sweetTooth;
     }
 
-    // Getters and setters
     public int getPreferenceId() {
         return preferenceId;
     }

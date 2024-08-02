@@ -55,7 +55,6 @@ public class UserPreferencesDAO {
         }
     }
 
-    // Method to insert user preferences into the database
     public void insertUserPreferences(UserPreferences preferences) throws SQLException {
         String query = "INSERT INTO UserPreferences (employeeId, dietaryPreference, spiceLevel, preferredCuisine, sweetTooth) " +
                         "VALUES (?, ?, ?, ?, ?)";

@@ -107,7 +107,7 @@ public class UserDaoTest {
     public void testGetUserByUsername_UserNotFound() throws SQLException {
         String username = "NonExistingUser";
 
-        when(mockResultSet.next()).thenReturn(false); // Simulate user not found
+        when(mockResultSet.next()).thenReturn(false);
         when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
 
         User user = userDAO.getUserByUsername(username);

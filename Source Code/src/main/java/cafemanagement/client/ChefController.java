@@ -15,6 +15,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Paths;
+import java.util.Date;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +62,7 @@ public class ChefController {
     }
 
     private void displayMenu() {
+        System.out.println();
         System.out.println("Chef Menu:");
         System.out.println("1. Send employee notifications");
         System.out.println("2. View menu");
@@ -76,22 +78,22 @@ public class ChefController {
         try {
             switch (input) {
                 case "1":
-                    sendEmployeeNotification(); // General
+                    sendEmployeeNotification();
                     break;
                 case "2":
                     viewMenu();
                     break;
                 case "3":
-                    generateFeedbackReport(); // Optional
+                    generateFeedbackReport();
                     break;
                 case "4":
-                    sendDishesToReview(); // Add recommendation engine
+                    sendDishesToReview();
                     break;
                 case "5":
-                    userInputOnDishesToReview(); // Get sentiment for a feedback
+                    userInputOnDishesToReview();
                     break;
                 case "6":
-                    getRecommendation(); // Get sentiment for a feedback
+                    getRecommendation();
                     break;
                 case "7":
                     getDiscardedMenu();
@@ -109,8 +111,8 @@ public class ChefController {
 
     private void sendNotification(String message, String notificationType, int menuItemId) {
         try {
-            List<Integer> receiverIds = getAllEmployeeId(); // Send to all employees
-            int senderId = getUserIdByCurrentUser(currentUser); // Current User id
+            List<Integer> receiverIds = getAllEmployeeId();
+            int senderId = getUserIdByCurrentUser(currentUser);
             notificationService.sendNotification(senderId, notificationType, menuItemId, message, receiverIds);
             System.out.println("Notification sent.");
         } catch (Exception e) {
@@ -137,7 +139,7 @@ public class ChefController {
     }
 
     protected void viewMenu() {
-        System.out.println("Viewing Menu With Feedback...");
+        System.out.println("Viewing Full Menu...");
         List<Menu> menuItems = menuItemService.getAllMenuItems();
     
         if (menuItems.isEmpty()) {
@@ -147,13 +149,11 @@ public class ChefController {
     
         System.out.println("Menu items:");
         System.out.println(
-                "----------------------------------------------------------------------------------------------------------------------------------" +
-                "--------------------------------------------------------------");
+                "------------------------------------------------------------------------------------------------------------------------------------------------");
         System.out.printf("| %-5s | %-20s | %-10s | %-10s | %-15s | %-12s | %-15s | %-6s | %-18s |%n", 
                 "ID", "Name", "Category", "Price", "Availability", "Spice Level", "Cuisine Type", "Sweet", "Dietary Preference");
         System.out.println(
-                "----------------------------------------------------------------------------------------------------------------------------------" +
-                "--------------------------------------------------------------");
+                "------------------------------------------------------------------------------------------------------------------------------------------------");
     
         printCategory(menuItems, 1, "Breakfast");
         printCategory(menuItems, 2, "Lunch");
@@ -207,9 +207,13 @@ public class ChefController {
 
     protected void sendDishesToReview() {
         try {
-            System.out.println("Enter the category ID for the poll (1 for Breakfast, 2 for Lunch, 3 for Dinner):");
-            int categoryId = readIntegerInput();
-            System.out.println("categoryId: " + categoryId);
+            int categoryId = getCategoryIdFromUser();
+            Date today = new java.sql.Date(System.currentTimeMillis());
+
+            if (pollService.pollExistsForCategoryOnDate(categoryId, today)) {
+                System.out.println("A poll has already been created for this category today. Please select another category.");
+                return;
+            }
 
             List<Map<String, Object>> recommendedItems = recommendationService.recommendFood(categoryId);
             if (recommendedItems.isEmpty()) {
@@ -217,88 +221,109 @@ public class ChefController {
                 return;
             }
 
-            System.out.println("Menu items:");
-            System.out.println(
-                    "-------------------------------------------------------------------------------------------------------");
-            System.out.printf("| %-5s | %-20s | %-10s | %-10s | %-12s | %-15s | %-10s | %-12s |%n",
-                    "No.", "Name", "Menu ID", "Category ID", "Price", "Availability", "Avg Rating", "Sentiment");
-            System.out.println(
-                    "-------------------------------------------------------------------------------------------------------");
+            displayRecommendedItems(recommendedItems);
 
-            for (int i = 0; i < recommendedItems.size(); i++) {
-                Map<String, Object> menuItem = recommendedItems.get(i);
-                System.out.printf("| %-5d | %-20s | %-10d | %-10d | %-12.2f | %-15s | %-10.2f | %-12s |%n",
-                        (i + 1), menuItem.get("name"), menuItem.get("menuId"), menuItem.get("categoryId"),
-                        menuItem.get("price"), (Boolean) menuItem.get("availability") ? "Available" : "Not Available",
-                        menuItem.get("averageRating"), menuItem.get("sentiment"));
+            List<Integer> selectedItems = getUserSelectedItems(recommendedItems);
+
+            if (confirmSelectedItems(recommendedItems, selectedItems)) {
+                createPoll(today, selectedItems);
             }
-            System.out.println(
-                    "-------------------------------------------------------------------------------------------------------");
-
-            List<Integer> selectedItems = new ArrayList<>();
-            while (true) {
-                selectedItems.clear();
-                System.out.println("Select 3 to 5 items by entering their numbers (comma-separated):");
-                String[] selectedIndices = userInput.readLine().trim().split(",");
-
-                if (selectedIndices.length >= 3 && selectedIndices.length <= 5) {
-                    boolean hasDuplicate = false;
-                    try {
-                        for (String index : selectedIndices) {
-                            int itemIndex = Integer.parseInt(index.trim()) - 1;
-                            if (itemIndex >= 0 && itemIndex < recommendedItems.size()) {
-                                int menuId = (int) recommendedItems.get(itemIndex).get("menuId");
-                                if (selectedItems.contains(menuId)) {
-                                    hasDuplicate = true;
-                                    break;
-                                } else {
-                                    selectedItems.add(menuId);
-                                }
-                            } else {
-                                throw new NumberFormatException("Index out of range");
-                            }
-                        }
-                    } catch (NumberFormatException e) {
-                        System.err.println("Invalid input. Please enter valid numbers.");
-                        continue;
-                    }
-
-                    if (hasDuplicate) {
-                        System.out.println("Duplicate items selected. Please select unique items.");
-                        continue;
-                    }
-
-                    System.out.println("Selected items:");
-                    for (int menuId : selectedItems) {
-                        recommendedItems.stream()
-                                .filter(menuItem -> (int) menuItem.get("menuId") == menuId)
-                                .forEach(menuItem -> System.out.printf(
-                                        "%-20s (ID: %d, Category ID: %d, Price: %.2f, Availability: %s, Avg Rating: %.2f, Sentiment: %s)%n",
-                                        menuItem.get("name"), menuItem.get("menuId"), menuItem.get("categoryId"),
-                                        menuItem.get("price"),
-                                        (Boolean) menuItem.get("availability") ? "Available" : "Not Available",
-                                        menuItem.get("averageRating"), menuItem.get("sentiment")));
-                    }
-
-                    System.out.println("Do you confirm these items? (yes/no):");
-                    String confirmation = userInput.readLine().trim().toLowerCase();
-                    if (confirmation.equals("yes") || confirmation.equals("y")) {
-                        break;
-                    } else {
-                        System.out.println("Please select items again.");
-                    }
-                } else {
-                    System.out.println("Please select between 3 and 5 items.");
-                }
-            }
-
-            int pollId = pollService.createPoll(currentUser.getUserId(), new java.sql.Date(System.currentTimeMillis()));
-            pollService.addItemsToPoll(pollId, selectedItems);
-            System.out.println("Poll created successfully with ID: " + pollId);
 
         } catch (InterruptedException | IOException e) {
             System.err.println("Error creating poll: " + e.getMessage());
         }
+    }
+
+    private int getCategoryIdFromUser() throws IOException {
+        System.out.println("Enter the category ID for the poll (1 for Breakfast, 2 for Lunch, 3 for Dinner):");
+        return readIntegerInput();
+    }
+
+    private void displayRecommendedItems(List<Map<String, Object>> recommendedItems) {
+        System.out.println("Menu items:");
+        System.out.println(
+                "-------------------------------------------------------------------------------------------------------");
+        System.out.printf("| %-5s | %-20s | %-10s | %-10s | %-12s | %-15s | %-10s | %-12s |%n",
+                "No.", "Name", "Menu ID", "Category ID", "Price", "Availability", "Avg Rating", "Sentiment");
+        System.out.println(
+                "-------------------------------------------------------------------------------------------------------");
+
+        for (int i = 0; i < recommendedItems.size(); i++) {
+            Map<String, Object> menuItem = recommendedItems.get(i);
+            System.out.printf("| %-5d | %-20s | %-10d | %-10d | %-12.2f | %-15s | %-10.2f | %-12s |%n",
+                    (i + 1), menuItem.get("name"), menuItem.get("menuId"), menuItem.get("categoryId"),
+                    menuItem.get("price"), (Boolean) menuItem.get("availability") ? "Available" : "Not Available",
+                    menuItem.get("averageRating"), menuItem.get("sentiment"));
+        }
+        System.out.println(
+                "-------------------------------------------------------------------------------------------------------");
+    }
+
+    private List<Integer> getUserSelectedItems(List<Map<String, Object>> recommendedItems) throws IOException {
+        List<Integer> selectedItems = new ArrayList<>();
+
+        while (true) {
+            selectedItems.clear();
+            System.out.println("Select 3 to 5 items by entering their numbers (comma-separated):");
+            String[] selectedIndices = userInput.readLine().trim().split(",");
+
+            if (selectedIndices.length >= 3 && selectedIndices.length <= 5) {
+                boolean hasDuplicate = false;
+                try {
+                    for (String index : selectedIndices) {
+                        int itemIndex = Integer.parseInt(index.trim()) - 1;
+                        if (itemIndex >= 0 && itemIndex < recommendedItems.size()) {
+                            int menuId = (int) recommendedItems.get(itemIndex).get("menuId");
+                            if (selectedItems.contains(menuId)) {
+                                hasDuplicate = true;
+                                break;
+                            } else {
+                                selectedItems.add(menuId);
+                            }
+                        } else {
+                            throw new NumberFormatException("Index out of range");
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    System.err.println("Invalid input. Please enter valid numbers.");
+                    continue;
+                }
+
+                if (!hasDuplicate) {
+                    break;
+                } else {
+                    System.out.println("Duplicate items selected. Please select unique items.");
+                }
+            } else {
+                System.out.println("Please select between 3 and 5 items.");
+            }
+        }
+
+        return selectedItems;
+    }
+
+    private boolean confirmSelectedItems(List<Map<String, Object>> recommendedItems, List<Integer> selectedItems) throws IOException {
+        System.out.println("Selected items:");
+        for (int menuId : selectedItems) {
+            recommendedItems.stream()
+                    .filter(menuItem -> (int) menuItem.get("menuId") == menuId)
+                    .forEach(menuItem -> System.out.printf(
+                            "%-20s (ID: %d, Category ID: %d, Price: %.2f, Availability: %s, Avg Rating: %.2f, Sentiment: %s)%n",
+                            menuItem.get("name"), menuItem.get("menuId"), menuItem.get("categoryId"),
+                            menuItem.get("price"),
+                            (Boolean) menuItem.get("availability") ? "Available" : "Not Available",
+                            menuItem.get("averageRating"), menuItem.get("sentiment")));
+        }
+
+        System.out.println("Do you confirm these items? (yes/no):");
+        String confirmation = userInput.readLine().trim().toLowerCase();
+        return confirmation.equals("yes") || confirmation.equals("y");
+    }
+
+    private void createPoll(Date today, List<Integer> selectedItems) {
+        int pollId = pollService.createPoll(currentUser.getUserId(), today);
+        pollService.addItemsToPoll(pollId, selectedItems);
+        System.out.println("Poll created successfully with ID: " + pollId);
     }
 
     protected void getDiscardedMenu() {
@@ -322,7 +347,6 @@ public class ChefController {
                     .orElse(0.0);
 
             String sentiment = recommendationService.calculateSentiment(feedbacks);
-            System.out.println("sentiment " + sentiment +" avg rating " + averageRating);
 
             if (averageRating < 2 || sentiment.equals("very negative")) {
                 discardMenuIds.add(menuId);
@@ -367,15 +391,15 @@ public class ChefController {
             try {
                 int choice = readIntegerInput();
                 switch (choice) {
-                    case 1:
+                    case 10:
                         removeFoodItemFromMenu();
                         break;
-                    case 2:
+                    case 1:
                         getDetailedFeedback();
                         break;
-                    case 3:
+                    case 2:
                         exit = true;
-                        System.out.println("Exiting Chef/Admin console.");
+                        System.out.println("Exiting Chef console.");
                         break;
                     default:
                         System.out.println("Invalid choice. Please select again.");
@@ -388,9 +412,8 @@ public class ChefController {
 
     private void displayOptions() {
         System.out.println("\nConsole Options:");
-        System.out.println("1. Remove the Food Item from Menu List (Should be done once a month)");
-        System.out.println("2. Get Detailed Feedback (Should be done once a month)");
-        System.out.println("3. Exit");
+        System.out.println("1. Get Detailed Feedback (Should be done once a month)");
+        System.out.println("2. Exit");
 
         System.out.print("Enter your choice: ");
     }
@@ -473,7 +496,7 @@ public class ChefController {
 
     private int getUserIdByCurrentUser(User currentUserInstance) {
         int userId = currentUserInstance.getUserId();
-        return userId != 0 ? userId : -1; // Return -1 if user not found
+        return userId != 0 ? userId : -1;
     }
 
     private List<Integer> getAllEmployeeId() {
@@ -525,8 +548,7 @@ public class ChefController {
     private void printCategory(List<Menu> menuItems, int categoryId, String categoryName) {
         System.out.printf("| %-134s |%n", categoryName);
         System.out.println(
-                "----------------------------------------------------------------------------------------------------------------------------------" +
-                "--------------------------------------------------------------");
+                "------------------------------------------------------------------------------------------------------------------------------------------------");
     
         menuItems.stream()
                 .filter(menuItem -> menuItem.getCategoryId() == categoryId)
@@ -544,8 +566,7 @@ public class ChefController {
                 });
     
         System.out.println(
-                "----------------------------------------------------------------------------------------------------------------------------------" +
-                "--------------------------------------------------------------");
+                "------------------------------------------------------------------------------------------------------------------------------------------------");
     }
 
     public void userInputOnDishesToReview() {
@@ -572,7 +593,4 @@ public class ChefController {
     
         System.out.println("------------------------------------------------");
     }
-    
-
-
 }

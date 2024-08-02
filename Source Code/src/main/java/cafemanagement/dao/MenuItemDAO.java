@@ -78,35 +78,84 @@ public class MenuItemDAO {
     }
 
     public boolean deleteMenuItem(int menuId) {
-        String deleteQuery = "DELETE FROM Menu WHERE menuId = ?";
+        String deleteMenuQuery = "DELETE FROM Menu WHERE menuId = ?";
+        String deleteNotificationsQuery = "DELETE FROM Notifications WHERE menuItemId = ?";
+        String deleteUserNotificationsQuery = "DELETE FROM UserNotifications WHERE notificationId IN (SELECT notificationId FROM Notifications WHERE menuItemId = ?)";
+    
         try (Connection connection = DatabaseUtil.getConnection();
-             PreparedStatement statement = connection.prepareStatement(deleteQuery)) {
-            statement.setInt(1, menuId);
-            int rowsDeleted = statement.executeUpdate();
-            return rowsDeleted > 0;
+             PreparedStatement deleteMenuStmt = connection.prepareStatement(deleteMenuQuery);
+             PreparedStatement deleteNotificationsStmt = connection.prepareStatement(deleteNotificationsQuery);
+             PreparedStatement deleteUserNotificationsStmt = connection.prepareStatement(deleteUserNotificationsQuery)) {
+            
+            connection.setAutoCommit(false);
+            deleteUserNotificationsStmt.setInt(1, menuId);
+            int userNotificationsDeleted = deleteUserNotificationsStmt.executeUpdate();
+            deleteNotificationsStmt.setInt(1, menuId);
+            int notificationsDeleted = deleteNotificationsStmt.executeUpdate();
+            deleteMenuStmt.setInt(1, menuId);
+            int menuDeleted = deleteMenuStmt.executeUpdate();
+            if (menuDeleted > 0 && notificationsDeleted >= 0 && userNotificationsDeleted >= 0) {
+                connection.commit();
+                return true;
+            } else {
+                connection.rollback();
+                return false;
+            }
         } catch (SQLException e) {
             System.err.println("Error deleting menu item with ID " + menuId + ": " + e.getMessage());
             return false;
         }
     }
-
+    
     public boolean deleteMultipleItems(List<Integer> menuIds) {
-        StringBuilder deleteQuery = new StringBuilder("DELETE FROM Menu WHERE menuId IN (");
+        if (menuIds.isEmpty()) {
+            return true;
+        }
+    
+        StringBuilder deleteMenuQuery = new StringBuilder("DELETE FROM Menu WHERE menuId IN (");
+        StringBuilder deleteNotificationsQuery = new StringBuilder("DELETE FROM Notifications WHERE menuItemId IN (");
+        StringBuilder deleteUserNotificationsQuery = new StringBuilder("DELETE FROM UserNotifications WHERE notificationId IN (SELECT notificationId FROM Notifications WHERE menuItemId IN (");
+    
         for (int i = 0; i < menuIds.size(); i++) {
-            deleteQuery.append("?");
+            deleteMenuQuery.append("?");
+            deleteNotificationsQuery.append("?");
+            deleteUserNotificationsQuery.append("?");
             if (i < menuIds.size() - 1) {
-                deleteQuery.append(",");
+                deleteMenuQuery.append(",");
+                deleteNotificationsQuery.append(",");
+                deleteUserNotificationsQuery.append(",");
             }
         }
-        deleteQuery.append(")");
+    
+        deleteMenuQuery.append(")");
+        deleteNotificationsQuery.append(")");
+        deleteUserNotificationsQuery.append("))");
     
         try (Connection connection = DatabaseUtil.getConnection();
-             PreparedStatement statement = connection.prepareStatement(deleteQuery.toString())) {
+             PreparedStatement deleteMenuStmt = connection.prepareStatement(deleteMenuQuery.toString());
+             PreparedStatement deleteNotificationsStmt = connection.prepareStatement(deleteNotificationsQuery.toString());
+             PreparedStatement deleteUserNotificationsStmt = connection.prepareStatement(deleteUserNotificationsQuery.toString())) {
+    
+            connection.setAutoCommit(false);
             for (int i = 0; i < menuIds.size(); i++) {
-                statement.setInt(i + 1, menuIds.get(i));
+                deleteUserNotificationsStmt.setInt(i + 1, menuIds.get(i));
             }
-            int rowsDeleted = statement.executeUpdate();
-            return rowsDeleted > 0;
+            int userNotificationsDeleted = deleteUserNotificationsStmt.executeUpdate();
+            for (int i = 0; i < menuIds.size(); i++) {
+                deleteNotificationsStmt.setInt(i + 1, menuIds.get(i));
+            }
+            int notificationsDeleted = deleteNotificationsStmt.executeUpdate();
+            for (int i = 0; i < menuIds.size(); i++) {
+                deleteMenuStmt.setInt(i + 1, menuIds.get(i));
+            }
+            int menuDeleted = deleteMenuStmt.executeUpdate();
+            if (menuDeleted > 0 && notificationsDeleted >= 0 && userNotificationsDeleted >= 0) {
+                connection.commit();
+                return true;
+            } else {
+                connection.rollback();
+                return false;
+            }
         } catch (SQLException e) {
             System.err.println("Error deleting menu items: " + e.getMessage());
             return false;
@@ -120,10 +169,8 @@ public class MenuItemDAO {
         try (Connection connection = DatabaseUtil.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
     
-            // Set the categoryId parameter in the prepared statement
             statement.setInt(1, categoryId);
     
-            // Execute the query
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     Menu menuItem = new Menu();
@@ -137,12 +184,11 @@ public class MenuItemDAO {
                     menuItem.setSweet(resultSet.getBoolean("isSweet"));
                     menuItem.setDietaryPreference(resultSet.getString("dietaryPreference"));
     
-                    // Add menuItem to list
                     menuItems.add(menuItem);
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace(); // Handle properly in your application, e.g., logging
+            e.printStackTrace();
         }
     
         return menuItems;
@@ -241,7 +287,7 @@ public class MenuItemDAO {
         } catch (SQLException e) {
             System.err.println("Error fetching menuId by name: " + e.getMessage());
         }
-        return -1; // Indicate that the menu item was not found
+        return -1;
     }
 
     public List<String> getAllMenuNames() {

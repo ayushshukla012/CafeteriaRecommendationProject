@@ -41,4 +41,8 @@ public class PollService {
     public Map<Integer, Integer> getVotesForLatestPoll() {
         return pollDAO.getVotesForLatestPoll();
     }
+
+    public boolean pollExistsForCategoryOnDate(int categoryId, Date pollDate) {
+        return pollDAO.pollExistsForCategoryOnDate(categoryId, pollDate);
+    }
 }
